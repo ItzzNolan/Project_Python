@@ -11,14 +11,14 @@ def test_creation_carte():
 
 def test_est_dans_grille():
     carte_test = Carte(20, 10)
-    assert carte_test.est_dans_grille(0, 0) is True
-    assert carte_test.est_dans_grille(19, 9) is True
-    assert carte_test.est_dans_grille(20, 9) is False
-    assert carte_test.est_dans_grille(19, 10) is False
+    assert carte_test.est_dans_grille(0, 0) is True     #coin en haut à gauche
+    assert carte_test.est_dans_grille(19, 9) is True    #coin en bas à droite
+    assert carte_test.est_dans_grille(20, 9) is False   #hors limites en largeur (trop à droite)
+    assert carte_test.est_dans_grille(19, 10) is False  #hors limites en hauteur (trop en bas)
 
 def test_get_unite_a():
     carte_test = Carte(5, 5)
-    assert carte_test.get_unite_a(2, 2) is None
+    assert carte_test.get_unite_a(2, 2) is None  #case vide car au début tout est est Vide --None--
     
     # On simule la présence d'une unité pour le test
     carte_test.grille[2][2] = "Mon Chevalier"
