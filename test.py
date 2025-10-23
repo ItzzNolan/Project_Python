@@ -25,13 +25,23 @@ crea_units(5,'Crossbowman',Armee2) #Crée 5 Crossbowmen et les ajoute dans Armee
 Unitee=Unit('Knight') #Crée un Knight
 Unitee.target=Armee1[1][1] #Affecte à target un Pikeman de Armee1 
 print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP)
-Unitee.target.HP -= 4 #Modifie la vie du Pikeman ciblé par Unitee
-print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP)
+Unitee.inflict_damage() #Modifie la vie du Pikeman ciblé par Unitee
+print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP,"\n")
 
 
 
-
-
+test=0
+#print(len(DictUnits))
+DictTest={'Knight':1,'Onager':7}
+"""
+for k in DictUnits.keys():
+    if k in DictTest.keys():
+        test += DictTest[k]-DictUnits[k]
+print(test)
+"""
+print(Unitee.Attack)
+print(Unitee.Unit,Unitee.Armor)
+print(Armee1[1][1].Unit,Armee1[1][1].Armor)
 
 
 """

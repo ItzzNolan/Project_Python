@@ -1,4 +1,4 @@
-import csv
+from csv import *
 
 
 class Unit():
@@ -10,10 +10,10 @@ class Unit():
     def __init__(self,nomUnite):
         self.Unit = self.def_stat('Unit',nomUnite)
         self.HP = self.def_stat('HP',nomUnite)
-        self.Type_Attack = self.def_stat('Type_Attack',nomUnite)
-        self.Attack = self.def_stat('Attack',nomUnite)
-        self.Armor = self.def_stat('Armor',nomUnite)
-        self.Pierce_Armor = self.def_stat('Pierce_Armor',nomUnite)
+        #self.Type_Attack = self.def_stat('Type_Attack',nomUnite)
+        #self.Attack = self.def_stat('Attack',nomUnite)
+        #self.Armor = self.def_stat('Armor',nomUnite)
+        #self.Pierce_Armor = self.def_stat('Pierce_Armor',nomUnite)
         self.Min_Range = self.def_stat('Min_Range',nomUnite)
         self.Max_Range = self.def_stat('Max_Range',nomUnite)
         self.Line_of_Sight = self.def_stat('Line_of_Sight',nomUnite)
@@ -24,17 +24,51 @@ class Unit():
         self.Blast_Radius = self.def_stat('Blast_Radius',nomUnite)
         self.Garrison = self.def_stat('Garrison',nomUnite)
         
+        
+        self.Attack = self.def_stat('Attack',nomUnite)
+        self.Armor = self.def_stat('Armor',nomUnite)
+
+
         self.coords = None 
         self.target = None
+        self.alive = False
 
     def def_stat(self, stat, nomUnite):
         """
         Methode definissant la statistique en entrée en prenant en compte le nom de l'unité 
         """
-        with open('Stats_Units.csv', 'r') as csvfile:
-            file = csv.DictReader(csvfile, delimiter='\t')
-            for row in file:
-                if row['Unit']==nomUnite:
-                    if (stat=='Unit' or stat=='Type_Attack') or row[stat]=='None':
-                        return row[stat]
-                    return float(row[stat]) #retourne un flottant pour pouvoir réaliser des opérations (ex: HP)
+        if stat=='Attack' or stat=='Armor':
+            liste=[]
+            with open(f'{stat}.csv', 'r') as csvfile:
+                file = list(DictReader(csvfile, delimiter='\t'))
+                for row in file:
+                    if row['Unit']==nomUnite:
+                        statistique = row
+            for k in row:
+                if row[k]=='None':
+                    liste.append(k)
+            for i in range(len(liste)):
+                del row[liste[i]]
+            del row['Unit']
+            return row
+
+        else:
+            with open('Stats_Units.csv', 'r') as csvfile:
+                file = DictReader(csvfile, delimiter='\t')
+                for row in file:
+                    if row['Unit']==nomUnite:
+                        if (stat=='Unit' or stat=='Type_Attack') or row[stat]=='None':
+                            return row[stat]
+                        return float(row[stat]) #retourne un flottant pour pouvoir réaliser des opérations (ex: HP)
+                
+    def inflict_damage(self):
+        assert type(self.target)!= "<class 'Classes.Unit'>"
+        degat=0
+        for k in self.Attack:
+            for l in self.target.Armor:
+                print(k,l)
+                if k is l:
+                    degat += max(0,self.Attack[k]-self.target.Armor[l])
+        print(degat)
+        degat=max(1,degat)
+        self.target.HP-=degat
