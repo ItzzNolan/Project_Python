@@ -44,13 +44,16 @@ class Unit():
                 for row in file:
                     if row['Unit']==nomUnite:
                         statistique = row
-            for k in row:
-                if row[k]=='None':
+            del statistique['Unit']
+            for k in statistique:
+                if statistique[k]=='None' or statistique[k]==nomUnite:
                     liste.append(k)
+                else:
+                    statistique[k]=float(statistique[k])
             for i in range(len(liste)):
-                del row[liste[i]]
-            del row['Unit']
-            return row
+                del statistique[liste[i]]
+            # return row
+            return statistique
 
         else:
             with open('Stats_Units.csv', 'r') as csvfile:
@@ -66,9 +69,10 @@ class Unit():
         degat=0
         for k in self.Attack:
             for l in self.target.Armor:
-                print(k,l)
-                if k is l:
+                if k == l:
                     degat += max(0,self.Attack[k]-self.target.Armor[l])
-        print(degat)
+
         degat=max(1,degat)
         self.target.HP-=degat
+
+    
