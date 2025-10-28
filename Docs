@@ -1,0 +1,20 @@
+dataclasses — Data Classes
+https://docs.python.org/3/library/dataclasses.html
+
+enum --- Support for enumerations
+https://docs.python.org/fr/3/library/enum.html
+
+typing — Prise en charge des annotations de type
+https://docs.python.org/fr/3.8/library/typing.html
+
+Protocols
+https://typing.python.org/en/latest/spec/protocol.html
+
+abc --- Abstract Base Classes
+https://docs.python.org/fr/3.13/library/abc.html
+
+Python's ABC (Abstract Base Class)
+https://www.youtube.com/watch?v=G-w5PvPQl5Q
+
+What are "Protocols" In Python?
+https://www.youtube.com/watch?v=2jN11lyKvfA
