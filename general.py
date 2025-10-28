@@ -10,11 +10,19 @@ from typing import Iterable, List, Optional, Tuple, Dict, Any, Protocol
 
 import abc
 
-#Type alias pour les coordonées de la grille (x,y)
+#Alias simple pour représenter une position sur la grille (x,y)
 Cord = Tuple[int, int]
 
 class General(abc.ABC):
     """Classe de base pour les généraux tactiques.
     Le moteur doit appeler decider_actions a chaque tick en passant
     un itérable d'unités alliés et une GameView"""
-    pass
+    
+    def __init__(self, name:str, id_player:int):
+        #Nom du general et l'ID du joueur
+        self.name = name
+        self.id_player = id_player
+    
+    @abc.abstractmethod
+    def decider_actions(self):
+        pass
