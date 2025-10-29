@@ -100,6 +100,7 @@ class TypeAction(Enum):
     HOLD = auto()
     MOVE = auto()
     ATTACK = auto()
+    FORM_UP = auto()
 
 @dataclass(frozen=True)
 class Action:
@@ -126,10 +127,13 @@ class General(abc.ABC):
     Le moteur doit appeler decider_actions a chaque tick en passant
     un itérable d'unités alliés et une GameView"""
     
-    def __init__(self, name:str, id_player:int):
+    def __init__(self, name:str, id_player:int, *, end_assault_after:Optional[int]=60*60):
         #Nom du general et l'ID du joueur
         self.name = name
         self.id_player = id_player
+
+        #Ticks apres lesquels on force un assault final (None=jamais)
+        self.end_assault_after = end_assault_after
     
     @abc.abstractmethod
     def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
@@ -138,6 +142,33 @@ class General(abc.ABC):
         """
         raise NotImplementedError
     
+    # --- Helpers --- #
+    def _should_end_assault(self, game:GameView) -> bool:
+        """Determine si on doit declencher l'assault final (empeche fuite infini)"""
+        return self.end_assault_after is not None and game.tick >= self.end_assault_after
+    
+    def _order_attack_focus(self, unit:UnitView, target:UnitView) -> Action:
+        """Construit un ordre d'attaque focalisee sur une cible <<target>> pour l'unite <<unit>>"""
+        return Action(unit_id=unit.id, type=TypeAction.ATTACK, target_id=target.id)
+    
+    def _order_move_to(self, unit:UnitView, dest:Cord) -> Action:
+        """Construit un ordre de deplacement vers une destination <<dest>> pour l'unite <<unit>>"""
+        return Action(unit_id=unit.id, type=TypeAction.MOVE, target_pos=dest)
+    
+    def _closest_enemies(self, unit:UnitView, game:GameView) -> Optional[UnitView]:
+        """Trouver l'ennemi le plus proche"""
+        try:
+            #Si ca marche, on retourne directement le resultat (l'ennemi le plus proche)
+            return game.nearest_enemy(unit)
+        except Exception:
+            """Si l'appel echoue, on ne bloque pas le reste du tour, on passe dans le fallback manuel
+            --> scan local des ennemis visibles
+            """
+            enemies = game.all_seen_enemies(self.id_player)
+            if not enemies:
+                return None
+            #Selectionne parmi les ennemis celui qui a la plus petite distance à unit
+            return min(enemies, key = lambda e:game.distance_tiles(unit.pos, e.pos))
 
 # ----------------------------
 #       Generaux du jeu
