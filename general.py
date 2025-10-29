@@ -89,5 +89,21 @@ class General(abc.ABC):
         self.id_player = id_player
     
     @abc.abstractmethod
-    def decider_actions(self):
-        pass
+    def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
+        """Doit retourner une liste d'Action pour ce tick
+        Le moteur doit appeler cette methode a chaque tick et executer les actions retournes
+        """
+        raise NotImplementedError
+    
+
+class CaptainBraindead(General):
+    """General qui ne donne aucun ordre et qui sert de baseline"""
+
+    def __init__(self, id_player:int):
+        super().__init__(name="Captain BRAINDEAD", id_player=id_player)
+
+    def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
+        """On choisit volontairement de ne rien ordonner []
+        Le moteur doit interpreter ça comme << laisser les unites suivre leur comportement par defaut >>
+        """
+        return []
