@@ -25,6 +25,7 @@ class UnitView(Protocol):
     @property
     def is_alive(self) -> bool:...
 
+
 """Tests UnitView -->
 
 class Cord:
@@ -47,11 +48,35 @@ class Soldier:
     def is_alive(self) -> bool:
         return self._hp > 0
 """
+
+
 """Interface de la vue du jeu"""
 class GameView(Protocol):
     #Compteur de ticks (ou de tours) dans le jeu
     @property
     def tick(self) -> int:...
+
+class TypeAction(Enum):
+    """Type d'actions que le general peut retourner"""
+    HOLD = auto()
+    MOVE = auto()
+    ATTACK = auto()
+
+@dataclass(frozen=True)
+class Action:
+    """Objet <<immuable>> representant un ordre pour une unite: quel unit_id, quel type, 
+    quel target_id (si attaque) ou target_pos (si déplacement), et un dictionnaire dic pour infos supp"""
+    unit_id:int
+    type:TypeAction
+    target_id:Optional[int] = None
+    target_pos:Optional[Cord] = None
+    dic:Dict[str, Any] = None
+
+    #Assure qu'on a bien un dict pour dic meme si None est fournie
+    """def __post_init__(self):
+        if self.dic is None:
+            object.__setattr__(self,"dic",{})
+    """
 
 class General(abc.ABC):
     """Classe de base pour les généraux tactiques.
