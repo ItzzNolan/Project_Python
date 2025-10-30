@@ -85,7 +85,7 @@ class GameView(Protocol):
     def all_seen_enemies(self, id_player:int) -> List[UnitView]:...
 
     #Calcule la distance (en nombre de cases) entre deux coord
-    def distance_tiles(self, x:Cord, b:Cord) -> int:...
+    def distance_tiles(self, x:Cord, y:Cord) -> int:...
 
     #Indique si une case donnee peut etre traversee ou non
     def is_walkable(self, a:Cord) -> bool:...
@@ -263,3 +263,58 @@ print(general1.name)  #"Major DAFT"
 print(general2.name)  #"Captain BRAINDEAD"
 """
 
+# ----------------------------
+#         Tests Locaux
+# ----------------------------
+
+"""Pour simuler rapidement des ticks et observer les Action renvoyes par les generaux"""
+
+@dataclass
+class TestUnit:
+    """Implementation d'UnitView pour test local"""
+    id:int
+    owner:int
+    pos:Cord
+    hp:int = 10
+    alive:bool = True
+    attack_range:int = 2
+    attack_ready:bool = True
+
+    @property
+    def is_alive(self) -> bool:
+        return self.alive and self.hp > 0
+    
+    @property
+    def range(self) -> int:
+        return self.attack_range
+    
+    def can_attack(self) -> bool:
+        return self.attack_ready
+
+@dataclass
+class TestGameView:
+        """Implementation de GameView pour tests: prend des listes d'unites"""
+        tick:int
+        allies: List[TestUnit]
+        enemies: List[TestUnit]
+
+        def distance_tiles(self, x:Cord, y:Cord) -> int:
+            return abs(x[0]-y[0]) + abs(x[1]-y[1])
+
+
+        def enemy_in_los(self, unit:UnitView) -> List[UnitView]:
+            #LOS = distance <= 5 tiles
+            return [e for e in self.enemies if e.is_alive and self.distance_tiles(unit.pos, e.pos) <= 5]
+        
+        def nearest_enemy(self, unit:UnitView) -> Optional[UnitView]:
+            alive = [e for e in self.enemies if e.is_alive]
+            if not alive:
+                return None
+            return min(alive, key = lambda e:self.distance_tiles(unit.pos, e.pos))
+        
+        def all_seen_enemies(self, id_player:int) -> List[UnitView]:
+            #Ici on renvoie juste tous les ennemis vivants
+            return [e for e in self.enemies if e.is_alive]
+        
+        def is_walkable(self, a:Cord) -> bool:
+            return True
