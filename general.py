@@ -226,6 +226,26 @@ class MajorDAFT(General):
         #Departager des scores identiques pour eviter une eventuelle casse
         score += random.random() * 0.01
         return score
+    
+    def _avoid_crowd(self, unit:UnitView, allies:List[UnitView], dest:Cord) -> Cord:
+        """Si plusieurs allies se dirigent vers la meme case, on decale la destination
+        d'une case dans une direction perpendiculaire pour repartir les unites et eviter la congestion
+        """
+
+        #Compteur des allies deja proches de la destination dest
+        near_sum = sum(1 for a in allies if a.is_alive and (abs(a.pos[0]-dest[0]) + abs(a.pos[1]-dest[1])) <= 1)
+        if near_sum <= 1:
+            #Pas congestionne
+            return dest
+        
+        """On calcule un decalage (binaire) dependant de l'ID de l'unite, pour que les unites 
+        ne choisissent pas toutes la meme direction
+        """
+        d_x = (unit.id % 2)*1-0 #0 ou 1
+        d_y = ((unit.id >> 1)% 2)*1-0
+        new_dest = (dest[0]+d_x, dest[1]+d_y)
+        return new_dest
+
 
     def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
         #Convertir l'iterable en liste car on veut plusieurs passes
@@ -283,7 +303,8 @@ class MajorDAFT(General):
                 continue
 
             #Calcul de la destination = pos de la cible
-            dest = target.pos
+            dest_raw = target.pos
+            dest = self._avoid_crowd(unit, allies, dest_raw)
 
             if go_all:
                 """Se rapprocher de la position cible

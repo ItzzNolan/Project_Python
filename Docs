@@ -25,3 +25,6 @@ It is not possible to create truly immutable Python objects. However, by passing
 There is a tiny performance penalty when using frozen=True: __init__() cannot use simple assignment to initialize fields, and must use object.__setattr__().
 
 L'étoile * dans la liste des paramètres d'une fonction sert à imposer que tous les arguments qui la suivent soient passés en arguments nommés (keyword arguments), et non positionnels.
+
+What's the congestion ?
+https://www.geeksforgeeks.org/computer-networks/congestion-control-in-computer-networks/
