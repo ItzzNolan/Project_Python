@@ -191,8 +191,8 @@ class MajorDAFT(General):
     sinon avance vers l'ennemi le plus proche
     """
 
-    def __init__(self, name, id_player, *, end_assault_after = 60 * 60):
-        super().__init__(name="MajorDAFT", id_player=id_player, end_assault_after=end_assault_after)
+    def __init__(self, id_player:int):
+        super().__init__(name="Major DAFT", id_player=id_player)
 
     def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
         #Liste qui contient toutes les actions decidees
@@ -200,6 +200,10 @@ class MajorDAFT(General):
         go_all = self.end_assault_after(game) #declencher l'assault final?
 
         for unit in unit_ally:
+            #Ignorer les unites mortes par securite
+            if not unit.is_alive():
+                continue
+
             #Regarder les ennemis en LOS
             visibles = game.enemy_in_los(unit)
             target:Optional[UnitView] = None
