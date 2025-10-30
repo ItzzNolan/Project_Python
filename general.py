@@ -234,3 +234,32 @@ class MajorDAFT(General):
                 orders.append(self._order_move_to(unit, target.pos))
             
         return orders
+
+# ----------------------------
+#    Registre + MakeGeneral
+# ----------------------------
+
+GENERAL_REGISTRY = {
+    "braindead" : CaptainBraindead,
+    "daft" : MajorDAFT,
+}
+
+"""Cette fonction va creer un general en fonction d'une chaine de caracteres
+typ -> type du general ("daft", "braindead"...)
+id_player -> l'id du joueur a qui appartient le general 
+**kwargs -> parametres suppl "facultatifs" passes au constructeur de la classe choisie
+"""
+def make_general(typ:str, id_player:int, **kwargs:Any) -> General:
+    key = typ.strip().lower() #On nettoie la chaine typ
+    if key not in GENERAL_REGISTRY:
+        raise KeyError(f"General inconnu '{typ}'. Disponible: {sorted(GENERAL_REGISTRY)}")
+    return GENERAL_REGISTRY[typ](id_player=id_player, **kwargs)
+
+"""Exemple concret
+general1 = make_general("daft", id_player=1)
+general2 = make_general("braindead", id_player=2)
+
+print(general1.name)  #"Major DAFT"
+print(general2.name)  #"Captain BRAINDEAD"
+"""
+
