@@ -186,3 +186,47 @@ class CaptainBraindead(General):
         """
         return []
     
+class MajorDAFT(General):
+    """General qui pour chaque unite, si une cible visible alors attaque la plus faible,
+    sinon avance vers l'ennemi le plus proche
+    """
+
+    def __init__(self, name, id_player, *, end_assault_after = 60 * 60):
+        super().__init__(name="MajorDAFT", id_player=id_player, end_assault_after=end_assault_after)
+
+    def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
+        #Liste qui contient toutes les actions decidees
+        orders:List[Action] = []
+        go_all = self.end_assault_after(game) #declencher l'assault final?
+
+        for unit in unit_ally:
+            #Regarder les ennemis en LOS
+            visibles = game.enemy_in_los(unit)
+            target:Optional[UnitView] = None
+
+            if visibles:
+                #Choisir l'ennemi avec le plus faible HP
+                target = min(visibles, key = lambda e:e.hp)
+            else:
+                #Pas de visible donc se rapprocher du plus proche connu
+                target = self._closest_enemies(unit, game)
+            
+            #Pas de cible disponible
+            if target is None:
+                #rien a faire pour cette unite 
+                continue
+
+            #On mesure la distance entre l'unite et la cible
+            dist = game.distance_tiles(unit.pos, target.pos)
+
+            #Si la cible est dans la portee d'attaque et que l'unite est prete a attaquer alors elle attaque
+            if dist <= unit.range and unit.can_attack():
+                orders.append(self._order_attack_focus(unit, target))
+            else:
+                """Se rapprocher de la position cible
+                Si go_all = True, on peut choisir une trajectoire plus agressive
+                Pour l'instant on se contente d'aller vers la pos de la cible
+                """
+                orders.append(self._order_move_to(unit, target.pos))
+            
+        return orders
