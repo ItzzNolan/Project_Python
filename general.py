@@ -4,11 +4,13 @@
 
 """On importe des utilitaires standards : dataclass pour des conteneurs d'Actions, Enum pour les types d'action, 
 Protocol pour définir des interfaces minimales que le moteur (IA) devra satisfaire"""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import auto, Enum
 from typing import Iterable, List, Optional, Tuple, Dict, Any, Protocol
 
 import abc
+import math
+import random
 
 #Alias Tuple pour représenter une position sur la grille (x,y)
 Cord = Tuple[int,int]
@@ -100,7 +102,7 @@ class TypeAction(Enum):
     HOLD = auto()
     MOVE = auto()
     ATTACK = auto()
-    FORM_UP = auto()
+    FORM_UP = auto() #Pour des ordres de regroupement
 
 @dataclass(frozen=True)
 class Action:
@@ -110,10 +112,10 @@ class Action:
     type:TypeAction
     target_id:Optional[int] = None
     target_pos:Optional[Cord] = None
-    dic:Dict[str, Any] = None
+    dic:Dict[str, Any] = field(default_factory=dict)
 
-    #Assure qu'on a bien un dict pour dic meme si None est fournie
-    """def __post_init__(self):
+    """Assure qu'on a bien un dict pour dic meme si None est fournie
+    def __post_init__(self):
         if self.dic is None:
             object.__setattr__(self,"dic",{})
     """
@@ -127,10 +129,13 @@ class General(abc.ABC):
     Le moteur doit appeler decider_actions a chaque tick en passant
     un itérable d'unités alliés et une GameView"""
     
-    def __init__(self, name:str, id_player:int, *, end_assault_after:Optional[int]=60*60):
+    def __init__(self, name:str, id_player:int, *, end_assault_after:Optional[int]=60*60, regroup_rad:int = 3):
         #Nom du general et l'ID du joueur
         self.name = name
         self.id_player = id_player
+
+        #Rayon (en tiles) de regroupement
+        self.regroup_rad= regroup_rad
 
         #Ticks apres lesquels on force un assault final (None=jamais)
         self.end_assault_after = end_assault_after
@@ -154,6 +159,10 @@ class General(abc.ABC):
     def _order_move_to(self, unit:UnitView, dest:Cord) -> Action:
         """Construit un ordre de deplacement vers une destination <<dest>> pour l'unite <<unit>>"""
         return Action(unit_id=unit.id, type=TypeAction.MOVE, target_pos=dest)
+    
+    def _order_hold(self, unit:UnitView) -> Action:
+        """Construit un ordre de maintient de l'unite a sa position par defaut"""
+        return Action(unit_id=unit.id, type=TypeAction.HOLD)
     
     def _closest_enemies(self, unit:UnitView, game:GameView) -> Optional[UnitView]:
         """Trouver l'ennemi le plus proche"""
@@ -188,16 +197,60 @@ class CaptainBraindead(General):
     
 class MajorDAFT(General):
     """General qui pour chaque unite, si une cible visible alors attaque la plus faible,
-    sinon avance vers l'ennemi le plus proche
+    sinon avance vers l'ennemi le plus proches
+    --> Evite la surexposition et respecte les cooldowns
+    --> Supporte le regroupement des troupes
     """
 
-    def __init__(self, id_player:int):
+    def __init__(self, id_player:int, *, regroup_at:Optional[Cord] = None):
         super().__init__(name="Major DAFT", id_player=id_player)
+        #Position de regroupement avant d'attaquer
+        self.regroup_at = regroup_at
+
+    def _threat_score(self, enemy:UnitView) -> float:
+        """Algorithme : Plus la valeur est elevee, plus la cible est prioritaire!
+        Ici, on privilegie les unites à distance (plus dangeureuses) et les unites a faible hp (faciles a down)
+        On se contente juste des attributs hp/range
+        """
+        score = 0.0
+        
+        #Priorite selon la portee de l'unite
+        try:
+            #Si enemy.range est important, on augmente le score
+            score += float(enemy.range) * 0.5
+        except Exception:
+            pass
+
+        #Priorite selon les HP de l'ennemi
+        score += max(0.0, 10.0-float(enemy.hp)) * 0.3
+        #Departager des scores identiques pour eviter une eventuelle casse
+        score += random.random() * 0.01
+        return score
 
     def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
+        #Convertir l'iterable en liste car on veut plusieurs passes
+        allies = [unit for unit in unit_ally if unit.is_alive]
         #Liste qui contient toutes les actions decidees
         orders:List[Action] = []
         go_all = self.end_assault_after(game) #declencher l'assault final?
+
+        """Si une position de regroupement est demandee et que les troupes ne se sont pas encore regroupes
+        On ordonne un FORM_UP (regroup) qu'on simule par des MOVE(s) vers la position regroup_at
+        """
+        if self.regroup_at is not None:
+            #Il faut determiner si la majorite des unites sont a portee du regroupement
+            dist_sum = sum(game.distance_tiles(unit.pos, self.regroup_at) for unit in allies) if allies else 0
+            average_dist = dist_sum / len(allies) if allies else 0
+
+            #Si l'unite est "loin" du point de regroupement et pas en assaut final alors on regroupe
+            if average_dist > self.regroup_rad and not go_all:
+                for unit in allies:
+                    #On se deplace vers le point de regroupement
+                    orders.append(self._order_move_to(unit, self.regroup_at))
+                return orders #Priorite au regroupement
+            
+        #Rassembler la liste des ennemis visibles globalement
+        seen_enemies = game.all_seen_enemies(self.id_player)
 
         for unit in unit_ally:
             #Ignorer les unites mortes par securite
@@ -209,15 +262,16 @@ class MajorDAFT(General):
             target:Optional[UnitView] = None
 
             if visibles:
-                #Choisir l'ennemi avec le plus faible HP
-                target = min(visibles, key = lambda e:e.hp)
+                #Choisir la cible la plus prioritaire selon _threat_score
+                target = max(visibles, key = lambda e:self._threat_score(e))
             else:
-                #Pas de visible donc se rapprocher du plus proche connu
+                #Pas de visible donc se rapprocher du plus proche ennemi connu
                 target = self._closest_enemies(unit, game)
             
             #Pas de cible disponible
             if target is None:
-                #rien a faire pour cette unite 
+                #Tenir la position
+                orders.append(self._order_hold(unit))
                 continue
 
             #On mesure la distance entre l'unite et la cible
@@ -226,12 +280,31 @@ class MajorDAFT(General):
             #Si la cible est dans la portee d'attaque et que l'unite est prete a attaquer alors elle attaque
             if dist <= unit.range and unit.can_attack():
                 orders.append(self._order_attack_focus(unit, target))
-            else:
+                continue
+
+            #Calcul de la destination = pos de la cible
+            dest = target.pos
+
+            if go_all:
                 """Se rapprocher de la position cible
                 Si go_all = True, on peut choisir une trajectoire plus agressive
-                Pour l'instant on se contente d'aller vers la pos de la cible
+                On se contente d'aller vers la pos de la cible
                 """
-                orders.append(self._order_move_to(unit, target.pos))
+                orders.append(self._order_move_to(unit, dest))
+            else:
+                """Sinon, on teste si se rapprocher est raisonnable 
+                (ne pas foncer sur plusieurs ennemis en cas d'inferiorite)
+                Si il y a plus d'ennemis visibles que d'allies proches, on garde une distance
+                """
+                nearby_enemies = sum(1 for e in seen_enemies if game.distance_tiles(unit.pos, e.pos) <= 3)
+                nearby_allies = sum(1 for a in allies if game.distance_tiles(unit.pos, a.pos) <= 3)
+
+                if nearby_enemies > nearby_allies and nearby_enemies>=2:
+                    #Situation defavorable --> Maintien de l'unite
+                    orders.append(self._order_hold(unit))
+                else:
+                    #On se rapproche normalement
+                    orders.append(self._order_move_to(unit, dest))
             
         return orders
 
@@ -293,28 +366,29 @@ class TestUnit:
 
 @dataclass
 class TestGameView:
-        """Implementation de GameView pour tests: prend des listes d'unites"""
-        tick:int
-        allies: List[TestUnit]
-        enemies: List[TestUnit]
+    """Implementation de GameView pour tests: prend des listes d'unites"""
+    tick:int
+    allies: List[TestUnit]
+    enemies: List[TestUnit]
 
-        def distance_tiles(self, x:Cord, y:Cord) -> int:
-            return abs(x[0]-y[0]) + abs(x[1]-y[1])
+    def distance_tiles(self, x:Cord, y:Cord) -> int:
+        return abs(x[0]-y[0]) + abs(x[1]-y[1])
 
 
-        def enemy_in_los(self, unit:UnitView) -> List[UnitView]:
-            #LOS = distance <= 5 tiles
-            return [e for e in self.enemies if e.is_alive and self.distance_tiles(unit.pos, e.pos) <= 5]
+    def enemy_in_los(self, unit:UnitView) -> List[UnitView]:
+        #LOS = distance <= 5 tiles
+        return [e for e in self.enemies if e.is_alive and self.distance_tiles(unit.pos, e.pos) <= 5]
         
-        def nearest_enemy(self, unit:UnitView) -> Optional[UnitView]:
-            alive = [e for e in self.enemies if e.is_alive]
-            if not alive:
-                return None
-            return min(alive, key = lambda e:self.distance_tiles(unit.pos, e.pos))
+    def nearest_enemy(self, unit:UnitView) -> Optional[UnitView]:
+        alive = [e for e in self.enemies if e.is_alive]
+        if not alive:
+            return None
+        return min(alive, key = lambda e:self.distance_tiles(unit.pos, e.pos))
         
-        def all_seen_enemies(self, id_player:int) -> List[UnitView]:
-            #Ici on renvoie juste tous les ennemis vivants
-            return [e for e in self.enemies if e.is_alive]
+    def all_seen_enemies(self, id_player:int) -> List[UnitView]:
+        #Ici on renvoie juste tous les ennemis vivants
+        return [e for e in self.enemies if e.is_alive]
         
-        def is_walkable(self, a:Cord) -> bool:
-            return True
+    def is_walkable(self, a:Cord) -> bool:
+        return True
+        
