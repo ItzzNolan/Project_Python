@@ -1,5 +1,7 @@
 # Ce fichier contient la classe qui représente le champ de bataille.
 
+from backend.Units import Units
+
 class Carte:
     """
     Représente la carte du jeu, une grille 2D.
@@ -38,3 +40,33 @@ class Carte:
             return None
         
         return self.grille[y][x]
+    
+    def placer_unite(self, unite, x: int, y: int):
+        """
+        Place une unité aux coordonnées (x, y) sur la carte.
+        
+        Arguments:
+            unite (Unite): L'unité à placer.
+            x (int): La coordonnée x.
+            y (int): La coordonnée y.
+        """
+        if self.est_dans_grille(x, y):
+            self.grille[y][x] = unite
+
+    def retirer_unite(self, unite):
+        """
+        Retire une unité de la carte.
+        
+        Arguments:
+            unite (Unite): L'unité à retirer.
+        """
+        for y in range(self.hauteur):
+            for x in range(self.largeur):
+                if self.grille[y][x] == unite:
+                    self.grille[y][x] = None
+                    return
+                
+    
+                
+    
+    
