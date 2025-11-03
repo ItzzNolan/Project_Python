@@ -65,7 +65,7 @@ class Unit():
                         return float(row[stat]) #retourne un flottant pour pouvoir réaliser des opérations (ex: HP)
                 
     def inflict_damage(self):
-        assert type(self.target)!= "<class 'Classes.Unit'>"
+        assert type(self.target)!= "<class 'Classes.Unit'>", type(self.target)
         damage=0
         for k in self.Attack:
             for l in self.target.Armor:
