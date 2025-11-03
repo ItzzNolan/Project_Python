@@ -1,4 +1,8 @@
 # Ce fichier contient la classe qui représente le champ de bataille.
+from backend.unite import Unite
+
+
+
 
 class Carte:
     """
@@ -18,6 +22,8 @@ class Carte:
         self.hauteur = hauteur
         self.grille = [[None for _ in range(largeur)] for _ in range(hauteur)]
 
+
+
     def est_dans_grille(self, x: int, y: int) -> bool:
         """
         Vérifie si les coordonnées (x, y) sont à l'intérieur des limites de la carte.
@@ -26,6 +32,37 @@ class Carte:
             bool: True si les coordonnées sont valides, False sinon.
         """
         return 0 <= x < self.largeur and 0 <= y < self.hauteur
+    
+
+    def placer_unite(self, unite: Unite, x: int, y: int) -> bool:
+    # On ajoute la condition cruciale : "and self.grille[y][x] is None"
+        if self.est_dans_grille(x, y) and self.grille[y][x] is None:
+            self.grille[y][x] = unite
+            return True
+    
+     # Si l'une des deux conditions est fausse, on arrive ici et on renvoie False
+        return False
+
+
+    def retirer_unite(self, unite: Unite) -> bool:
+        """
+        Retire une unité de la carte. Pour cela, elle parcourt la grille pour trouver l'unité.
+
+        Args:
+            unite (Unite): L'instance de l'unité à retirer.
+            
+        Returns:
+            bool: True si l'unité a été trouvée et retirée, False sinon.
+        """
+        for y in range(self.hauteur):
+            for x in range(self.largeur):
+                if self.grille[y][x] == unite:
+                    self.grille[y][x] = None
+                    # L'unité a été trouvée et retirée, on peut arrêter la recherche
+                    return True
+        # Si on termine les boucles sans trouver l'unité, c'est qu'elle n'était pas sur la carte
+        return False
+
 
     def get_unite_a(self, x: int, y: int):
         """

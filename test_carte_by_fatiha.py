@@ -2,6 +2,15 @@
 
 from backend.carte import Carte
 
+
+# --- FAUSSE CLASSE UNITE POUR NOS TESTS ---
+class FakeUnite:
+    def __init__(self, nom="TestUnit"):
+        self.nom = nom
+    # On ajoute cette méthode pour que pytest affiche des noms plus clairs en cas d'erreur
+    def __repr__(self):
+        return f"<FakeUnite {self.nom}>"
+
 def test_creation_carte():
     carte_test = Carte(20, 10)
     assert carte_test.largeur == 20
@@ -24,3 +33,42 @@ def test_get_unite_a():
     carte_test.grille[2][2] = "Mon Chevalier"
     assert carte_test.get_unite_a(2, 2) == "Mon Chevalier"
     assert carte_test.get_unite_a(10, 10) is None
+
+def test_placer_unite_succes_et_echecs():
+    """Teste les différents scénarios de placement d'unité."""
+    # ARRANGE
+    carte = Carte(5, 5)
+    unite1 = FakeUnite(nom="Aragorn")
+    unite2 = FakeUnite(nom="Legolas")
+    
+    # ACT (Success) & ASSERT
+    succes_placement_1 = carte.placer_unite(unite1, 1, 1)
+    assert succes_placement_1 is True
+    assert carte.get_unite_a(1, 1) == unite1
+    
+    # ACT (Failure - Occupied) & ASSERT
+    succes_placement_2 = carte.placer_unite(unite2, 1, 1)
+    assert succes_placement_2 is False
+    assert carte.get_unite_a(1, 1) == unite1 # C'est toujours unite1 qui est sur la case
+    
+    # ACT (Failure - Out of bounds) & ASSERT
+    succes_placement_3 = carte.placer_unite(unite2, -1, 5)
+    assert succes_placement_3 is False
+
+def test_retirer_unite_succes_et_echec():
+    """Teste les scénarios de retrait d'unité."""
+
+    carte = Carte(5, 5)
+    unite_a_retirer = FakeUnite(nom="Gimli")
+    unite_inexistante = FakeUnite(nom="Sauron")
+    carte.placer_unite(unite_a_retirer, 3, 3)
+    
+    # ACT (Failure - Not on map) & ASSERT
+    echec_retrait = carte.retirer_unite(unite_inexistante)
+    assert echec_retrait is False
+    assert carte.get_unite_a(3, 3) == unite_a_retirer # L'unité est toujours là
+    
+    # ACT (Success) & ASSERT
+    succes_retrait = carte.retirer_unite(unite_a_retirer)
+    assert succes_retrait is True
+    assert carte.get_unite_a(3, 3) is None # La case est maintenant vide
