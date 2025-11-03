@@ -99,9 +99,10 @@ class Unit():
             if not hasattr(autre, 'coords') or autre.coords is None:
                 continue  
 
-            dist = math.sqrt((x - autre.coords[0])**2 + (y - autre.coords[1])**2)
-            cible_proche = autre
-            distance_min = dist
+            dist = math.sqrt((x - autre.coords[0])**2 + (y - autre.coords[1])**2)    
+            if dist<= distance_min
+                cible_proche = autre
+                distance_min = dist
 
         self.target = cible_proche
         return cible_proche
@@ -109,7 +110,7 @@ class Unit():
        
     
         if self.coords is None:
-            print("L'unité {self.Unit} n'a pas de position initiale.")
+            print(f"L'unité {self.Unit} n'a pas de position initiale.")
             return
 
         x, y = self.coords
@@ -132,3 +133,4 @@ class Unit():
             new_x = x + dx * ratio
             new_y = y + dy * ratio
             self.coords = (new_x, new_y)
+
