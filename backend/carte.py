@@ -5,12 +5,12 @@ class Carte:
     Représente la carte du jeu, une grille 2D.
     Elle stocke les dimensions et ce qui se trouve sur chaque case.
     """
-
+    """Le constructeur de la classe Carte."""
     def __init__(self, largeur: int, hauteur: int):
         """
         Initialise une nouvelle carte.
         
-        Args:
+        Arguments:
             largeur (int): Le nombre de cases en largeur.
             hauteur (int): Le nombre de cases en hauteur.
         """
