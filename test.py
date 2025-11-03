@@ -24,9 +24,10 @@ crea_units(5,'Crossbowman',Armee2) #Crée 5 Crossbowmen et les ajoute dans Armee
 
 Unitee=Unit('Knight') #Crée un Knight
 Unitee.target=Armee1[1][1] #Affecte à target un Pikeman de Armee1 
-print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP)
-Unitee.inflict_damage() #Modifie la vie du Pikeman ciblé par Unitee
-print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP,"\n")
+print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP,Unitee.target.alive)
+for i in range(6):
+    Unitee.inflict_damage() #Modifie la vie du Pikeman ciblé par Unitee
+print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP,Unitee.target.alive ,"\n")
 
 
 
@@ -34,33 +35,16 @@ test=0
 #print(len(DictUnits))
 DictTest={'Knight':1,'Onager':7}
 """
+
+#tests de degats
 for k in DictUnits.keys():
     if k in DictTest.keys():
         test += DictTest[k]-DictUnits[k]
 print(test)
-"""
+
+#print des dict d'attaque/defense
 print(Unitee.Attack)
 print(Unitee.Unit,Unitee.Armor)
 print(Armee1[1][1].Unit,Armee1[1][1].Armor)
 
-
-"""
-with open('Stats_Units.csv', 'r') as csvfile:
-    spamreader = csv.DictReader(csvfile, delimiter='\t')
-    for row in spamreader:
-        if row['Unit']=='Pikeman':
-            print(f"Unité: {row['Unit']}, HP: {row['HP']}, Attack: {row['Attack']}")
-
-class Unit():
-    def __init__(self,nomUnite):
-            pass                 
-
-    def deplacement():
-        pass
-
-    def degats_infliges():
-        pass
-
-    def degats_pris():
-        pass
 """

@@ -31,7 +31,7 @@ class Unit():
 
         self.coords = None 
         self.target = None
-        self.alive = False
+        self.alive = True
 
     def def_stat(self, stat, nomUnite):
         """
@@ -66,13 +66,18 @@ class Unit():
                 
     def inflict_damage(self):
         assert type(self.target)!= "<class 'Classes.Unit'>"
-        degat=0
+        damage=0
         for k in self.Attack:
             for l in self.target.Armor:
                 if k == l:
-                    degat += max(0,self.Attack[k]-self.target.Armor[l])
+                    damage += max(0,self.Attack[k]-self.target.Armor[l])
 
-        degat=max(1,degat)
-        self.target.HP-=degat
+        damage=max(1,damage)
+        self.target.take_damage(damage)
 
-    
+    def take_damage(self, damage):
+        self.HP-=damage
+        if self.HP<=0:
+            self.alive=False
+
+
