@@ -1,6 +1,8 @@
 import unittest
 from scénario.scénario_chevalier_piquier import scenario_piquiers_vs_chevaliers
 from backend.jeu import Jeu
+from backend.carte import Carte
+from backend.Units import Unit
 
 class TestScenario(unittest.TestCase):
     def test_creation(self):
