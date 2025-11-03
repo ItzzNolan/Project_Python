@@ -1,5 +1,5 @@
 # Ce fichier contient la classe qui représente le champ de bataille.
-from backend.unite import Unite
+from backend.Units import Unit
 
 
 
@@ -34,7 +34,7 @@ class Carte:
         return 0 <= x < self.largeur and 0 <= y < self.hauteur
     
 
-    def placer_unite(self, unite: Unite, x: int, y: int) -> bool:
+    def placer_unite(self, unite: Unit, x: int, y: int) -> bool:
     # On ajoute la condition cruciale : "and self.grille[y][x] is None"
         if self.est_dans_grille(x, y) and self.grille[y][x] is None:
             self.grille[y][x] = unite
@@ -44,7 +44,7 @@ class Carte:
         return False
 
 
-    def retirer_unite(self, unite: Unite) -> bool:
+    def retirer_unite(self, unite: Unit) -> bool:
         """
         Retire une unité de la carte. Pour cela, elle parcourt la grille pour trouver l'unité.
 
