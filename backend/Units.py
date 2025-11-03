@@ -100,7 +100,7 @@ class Unit():
                 continue  
 
             dist = math.sqrt((x - autre.coords[0])**2 + (y - autre.coords[1])**2)    
-            if dist<= distance_min
+            if dist<= distance_min:
                 cible_proche = autre
                 distance_min = dist
 
@@ -133,4 +133,5 @@ class Unit():
             new_x = x + dx * ratio
             new_y = y + dy * ratio
             self.coords = (new_x, new_y)
+
 
