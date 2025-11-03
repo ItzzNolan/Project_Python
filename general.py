@@ -358,36 +358,64 @@ print(general2.name)  #"Captain BRAINDEAD"
 """
 
 # ----------------------------
-#         Tests Locaux
+#  Tests unitaires - FastDev
 # ----------------------------
 
 """Pour simuler rapidement des ticks et observer les Action renvoyes par les generaux"""
 
 @dataclass
 class TestUnit:
-    """Implementation d'UnitView pour test local"""
+    """Implementation d'UnitView pour test local
+    Champs:
+    -id: identifiant unique
+    -owner: id du joueur (0 ou 1)
+    -pos: position (x,y)
+    -hp: points de vie
+    -attack_range: portee d'attaque (tiles)
+    -attack_damage: dmgs infliges par attaque
+    -attack_cd_ticks: ticks entre attaques
+    -last_attack_tick: tick du dernier tir (pour cooldown)
+    -speed: tiles par tick (ici seulement 0 ou 1)
+    """
     id:int
     owner:int
     pos:Cord
     hp:int = 10
-    alive:bool = True
+    #alive:bool = True
     attack_range:int = 2
-    attack_ready:bool = True
+    #attack_ready:bool = True
+    attack_damage:int = 3
+    attack_cd_ticks:int = 3
+    last_attack_tick:int = -999
+    speed:int = 1  #Tiles par tick (0=imobile, 1=un tile par tick)
+    """Utile pour les tests locaux: un nom lisible"""
+    unit_class:str = "Soldier"
+
 
     @property
     def is_alive(self) -> bool:
-        return self.alive and self.hp > 0
+        return self.hp > 0 #and self.alive 
     
     @property
     def range(self) -> int:
         return self.attack_range
     
+    @property
+    def hp_value(self) -> int:
+        return self.hp
+    
     def can_attack(self) -> bool:
-        return self.attack_ready
+        #Suppose qu'on accede a la variable globale CURRENT_TICK dans le simulateur
+        global CURRENT_TICK
+        return (CURRENT_TICK - self.last_attack_tick) >= self.attack_cd_ticks and self.is_alive
 
 @dataclass
 class TestGameView:
-    """Implementation de GameView pour tests: prend des listes d'unites"""
+    """Implementation de GameView pour tests: prend des listes d'unites
+    Elle garde deux listes: allies et enemies (TestUnit). Elle fournit les helpers
+    requis par les Generals: enemy_in_los, nearest_enemy, all_seen_enemies,
+    distance_tiles, is_walkable.
+    """
     tick:int
     allies: List[TestUnit]
     enemies: List[TestUnit]
@@ -413,3 +441,9 @@ class TestGameView:
     def is_walkable(self, a:Cord) -> bool:
         return True
         
+# ----------------------------
+#      Simulateur - Tests
+# ----------------------------
+
+#Variable globale geree par le simulateur pour le cooldown
+CURRENT_TICK = 0
