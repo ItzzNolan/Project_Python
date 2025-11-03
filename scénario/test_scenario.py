@@ -1,5 +1,5 @@
 import unittest
-from scenario.batailles_base import scenario_piquiers_vs_chevaliers
+from scénario.scénario_chevalier_piquier import scenario_piquiers_vs_chevaliers
 from backend.jeu import Jeu
 
 class TestScenario(unittest.TestCase):

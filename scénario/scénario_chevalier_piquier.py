@@ -3,7 +3,9 @@ from backend.Units import Unit
 from backend.jeu import Jeu
 from ia import MajorDraft
 
-def scenario_piquiers_vs_chevaliers():
+
+def scenario_piquiers_vs_chevaliers():  
+
     # 1. Créer le jeu et la carte
     jeu = Jeu()
     carte = Carte(10, 10)
@@ -17,14 +19,14 @@ def scenario_piquiers_vs_chevaliers():
     # --- Piquiers (joueur 1)
     for x in range(3):
         for y in range(10):
-            piquier = Unite("Piquier", 100, 15, 5)
+            piquier = Unit("Piquier", 100, 15, 5)
             carte.placer_unite(piquier, x, y)
             jeu.ajouter_unite(general_joueur1, piquier)  # selon ta classe Jeu
 
     # --- Chevaliers (joueur 2)
     for x in range(7, 10):
         for y in range(10):
-            chevalier = Unite("Chevalier", 150, 25, 10)
+            chevalier = Unit("Chevalier", 150, 25, 10)
             carte.placer_unite(chevalier, x, y)
             jeu.ajouter_unite(general_joueur2, chevalier)
 
