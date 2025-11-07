@@ -7,7 +7,6 @@ class Carte:
     Représente la carte du jeu, une grille 2D.
     Elle stocke les dimensions et ce qui se trouve sur chaque case.
     """
-    """Le constructeur de la classe Carte."""
     def __init__(self, largeur: int, hauteur: int):
         """
         Initialise une nouvelle carte.
@@ -18,7 +17,8 @@ class Carte:
         """
         self.largeur = largeur
         self.hauteur = hauteur
-        self.grille = [[None for _ in range(largeur)] for _ in range(hauteur)]
+        # Chaque case contient maintenant une LISTE d'unités
+        self.grille = [[[] for _ in range(largeur)] for _ in range(hauteur)]
 
     def est_dans_grille(self, x: int, y: int) -> bool:
         """
@@ -29,15 +29,15 @@ class Carte:
         """
         return 0 <= x < self.largeur and 0 <= y < self.hauteur
 
-    def get_unite_a(self, x: int, y: int):
+    def get_unites_a(self, x: int, y: int):
         """
-        Renvoie l'objet unité qui se trouve aux coordonnées (x, y).
+        Renvoie la LISTE des unités qui se trouvent aux coordonnées (x, y).
         
         Returns:
-            Unite: L'objet unité trouvé, ou None si la case est vide ou en dehors de la carte.
+            list: La liste des unités trouvées (vide si aucune unité).
         """
         if not self.est_dans_grille(x, y):
-            return None
+            return []
         
         return self.grille[y][x]
     
@@ -51,7 +51,9 @@ class Carte:
             y (int): La coordonnée y.
         """
         if self.est_dans_grille(x, y):
-            self.grille[y][x] = unite
+            # Ajoute l'unité à la liste si elle n'y est pas déjà
+            if unite not in self.grille[y][x]:
+                self.grille[y][x].append(unite)
 
     def retirer_unite(self, unite):
         """

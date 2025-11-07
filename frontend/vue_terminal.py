@@ -1,64 +1,69 @@
-import colorama
-from colorama import Fore, Style
+# frontend/vue_terminal.py
 
-# la VRAIE classe Carte, car elle existe déjà et elle est fonctionnelle.
+import colorama
+from colorama import Fore, Back, Style
+
 from backend.carte import Carte
 
-# --- SECTION DE SIMULATION (CODE TEMPORAIRE) ---
-# Le but de cette classe est de simuler une "Unité" pour que notre fonction tant que la vraie ne soit complète.
-
-class FausseUnite:
-    def __init__(self, nom: str, pv: int, equipe: int, x: int, y: int):
-        self.nom = nom                  
-        self.points_de_vie = pv         
-        self.equipe = equipe            
-        self.x = x                      
-        self.y = y                      
-
-
-
-def afficher_jeu(carte: Carte, unites: list[FausseUnite]):
+def afficher(jeu):
     """
-    Affiche l'état complet du jeu dans le terminal, en respectant les exigences.
+    Affiche l'état complet du jeu en se basant sur l'objet Jeu réel.
     
     Arguments:
-        carte (Carte): L'objet carte réel du jeu.
-        unites (list): Une liste d'objets (pour l'instant, nos FaussesUnites).
+        jeu: L'objet principal du jeu, qui contient la carte et la liste des unités.
     """
-  
-    # autoreset=True évite que tout le terminal reste coloré après notre affichage.
     colorama.init(autoreset=True)
 
-    # 1. On prépare une "toile" vide : une grille de texte remplie de points.
-    # C'est plus simple que d'imprimer case par case.
-    grille_affichage = [[" . " for _ in range(carte.largeur)] for _ in range(carte.hauteur)]
+    carte = jeu.carte
+    
+    # 1. On prépare la "toile" vide
+    grille_affichage = [[f"{Fore.GREEN} . {Style.RESET_ALL}" for _ in range(carte.largeur)] for _ in range(carte.hauteur)]
 
-    # 2. On "dessine" nos unités sur cette toile.
-    for unite in unites:
-        # On vérifie que l'unité est bien dans les limites de la carte
-        if 0 <= unite.x < carte.largeur and 0 <= unite.y < carte.hauteur:
-            
-            # On prend la première lettre du nom (C pour Chevalier, P pour Piquier)
-            initiale = unite.nom[0]
-            
-            # On met en majuscule pour l'équipe 1, minuscule pour l'équipe 2 (comme dans l'exemple du prof)
-            lettre = initiale.upper() if unite.equipe == 1 else initiale.lower()
-            
-            # On choisit la couleur en fonction de l'équipe
-            couleur = Fore.BLUE if unite.equipe == 1 else Fore.RED
-            
-            # On place le caractère coloré dans notre grille de texte, à la bonne position
-            grille_affichage[unite.y][unite.x] = f"{couleur}{lettre}{Style.RESET_ALL} "
+    # 2. Créer un dictionnaire pour regrouper les unités par case
+    unites_par_case = {}
+    for unite in jeu.unites:
+        if not unite.alive:
+            continue
+        
+        x_float, y_float = unite.coords
+        # Arrondir à la case la plus proche
+        x_case = round(x_float)
+        y_case = round(y_float)
+        
+        if 0 <= x_case < carte.largeur and 0 <= y_case < carte.hauteur:
+            cle = (x_case, y_case)
+            if cle not in unites_par_case:
+                unites_par_case[cle] = []
+            unites_par_case[cle].append(unite)
+    
+    # 3. Afficher les unités
+    for (x, y), unites in unites_par_case.items():
+        if len(unites) == 1:
+            # Une seule unité
+            unite = unites[0]
+            initiale = unite.Unit[0].upper()
+            couleur = Fore.BLUE if unite.equipe == 0 else Fore.RED
+            grille_affichage[y][x] = f"{couleur} {initiale} {Style.RESET_ALL}"
+        else:
+            # Plusieurs unités : afficher les initiales empilées
+            initiales = "".join([u.Unit[0].upper() for u in unites])
+            # Utiliser la couleur majoritaire ou de la première
+            couleur = Fore.BLUE if unites[0].equipe == 0 else Fore.RED
+            grille_affichage[y][x] = f"{couleur}{initiales[:3]:^3}{Style.RESET_ALL}"  # Max 3 lettres
 
-    # 3. On affiche le résultat final.
+    # 4. Afficher la grille
     print("--- Champ de Bataille ---")
     for ligne in grille_affichage:
-        # "".join(ligne) est une façon très efficace d'assembler toutes les cases d'une ligne
-        # en une seule chaîne de caractères avant de l'imprimer.
         print("".join(ligne))
 
-    # 4. On affiche la liste des points de vie sous la carte, comme demandé.
+    # 5. Afficher les points de vie des unités VIVANTES
     print("\n--- Santé des Unités ---")
-    for unite in unites:
-        couleur = Fore.BLUE if unite.equipe == 1 else Fore.RED
-        print(f"{couleur}{unite.nom} (équipe {unite.equipe}) aux coordonnées ({unite.x},{unite.y}) : {unite.points_de_vie} PV")
+    unites_vivantes = [u for u in jeu.unites if u.alive]
+    
+    if not unites_vivantes:
+        print("Aucune unité vivante sur le champ de bataille.")
+    else:
+        for unite in unites_vivantes:
+            couleur = Fore.BLUE if unite.equipe == 0 else Fore.RED
+            x, y = unite.coords
+            print(f"{couleur}{unite.Unit} (equipe {unite.equipe}) : {unite.HP} HP, position : {x:.1f}, {y:.1f}){Style.RESET_ALL}")
