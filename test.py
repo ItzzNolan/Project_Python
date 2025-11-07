@@ -29,3 +29,11 @@ print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP,Uni
 for i in range(6):
     Unitee.inflict_damage() #Modifie la vie du Pikeman ciblé par Unitee
 print(Unitee.Min_Range,Unitee.Accuracy,Unitee.Blast_Radius, Unitee.target.HP,Unitee.target.alive ,"\n")
+Unitee.coords=(0,0)
+dest=(-140,14)
+cpt=0
+while Unitee.coords!=dest:
+    Unitee.se_deplacer(dest)
+    print(int(Unitee.coords[0]),int(Unitee.coords[1]))
+    cpt+=1
+print(cpt)
