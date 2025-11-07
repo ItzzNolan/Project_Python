@@ -1,6 +1,6 @@
 # Ce fichier contient la classe qui représente le champ de bataille.
 
-from backend.Units import Units
+from backend.Units import Unit
 
 class Carte:
     """
