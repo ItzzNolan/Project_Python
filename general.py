@@ -252,7 +252,7 @@ class MajorDAFT(General):
         allies = [unit for unit in unit_ally if unit.is_alive]
         #Liste qui contient toutes les actions decidees
         orders:List[Action] = []
-        go_all = self.end_assault_after(game) #declencher l'assault final?
+        go_all = self._should_end_assault(game) #declencher l'assault final?
 
         """Si une position de regroupement est demandee et que les troupes ne se sont pas encore regroupes
         On ordonne un FORM_UP (regroup) qu'on simule par des MOVE(s) vers la position regroup_at
@@ -273,9 +273,9 @@ class MajorDAFT(General):
         seen_enemies = game.all_seen_enemies(self.id_player)
 
         for unit in unit_ally:
-            #Ignorer les unites mortes par securite
+            """ #Ignorer les unites mortes par securite
             if not unit.is_alive():
-                continue
+                continue """
 
             #Regarder les ennemis en LOS
             visibles = game.enemy_in_los(unit)
@@ -548,3 +548,44 @@ def print_state(gameView:TestGameView) -> None:
     
     print("")
 
+
+if __name__ == "__main__":
+    #On installe une seed pour notre GameTesting
+    random.seed(1)
+
+    """On cree mtn deux equipes toutes simples pour notre GameTesting 
+    (-- Attention ! --) Implementer les classes Unit prochainement !!
+    """
+
+    #Equipe 1 - 3 soldats 
+    allies = [
+        TestUnit(id=1, owner=0, pos=(0,0), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
+        TestUnit(id=2, owner=0, pos=(0,1), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
+        TestUnit(id=3, owner=0, pos=(1,0), hp=8, attack_range=2, attack_damage=2, attack_cd_ticks=3, unit_class="Archer"),
+    ]
+
+    #Equipe 2 - 3 soldats ennemis
+    enemies = [
+        TestUnit(id=11, owner=1, pos=(8,8), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
+        TestUnit(id=12, owner=1, pos=(8,7), hp=8, attack_range=2, attack_damage=2, attack_cd_ticks=3, unit_class="Archer"),
+        TestUnit(id=13, owner=1, pos=(7,8), hp=6, attack_range=1, attack_damage=4, attack_cd_ticks=3, unit_class="Pikeman"),
+    ]
+
+    #On initialise le gameView
+    gv = TestGameView(tick=0, allies=allies, enemies=enemies)
+
+    """On cree les generaux"""
+    #MajorDAFT pour l'equipe 1 avec un point de regroupement proche
+    g1 = MajorDAFT(id_player=1, regroup_at=(2,2))
+
+    #CaptainBraindead pour l'equipe 2 pour voir la difference
+    g2 = CaptainBraindead(id_player=2)
+
+    generals = {1:g1, 2:g2}
+
+    """Maintenant on simule N ticks et on affiche l'etat des unites"""
+    TICKS = 20
+
+    for _ in range(TICKS):
+        print_state(gv)
+        tick_simulation(gv, generals)
