@@ -535,3 +535,16 @@ def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
         
     #On incremente le tick global (dans l'objet gameView)
     gameView.tick += 1
+
+def print_state(gameView:TestGameView) -> None:
+    """Affiche l'etat des unites pour le debugging et les tests"""
+    def unit_line(unit:TestUnit) -> str:
+        return f"U{unit.id:02d} (P{unit.owner}) {unit.unit_class:8} pos={unit.pos} hp={unit.hp:2d}"
+    
+    print(f"---- Tick {gameView.tick} ----")
+
+    for unit in sorted(gameView.allies + gameView.enemies, key = lambda x:(x.owner, x.id)):
+        print(unit_line(unit))
+    
+    print("")
+
