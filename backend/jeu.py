@@ -1,6 +1,6 @@
 # fichier : jeu.py
 
-from carte import Carte
+from backend.carte import Carte
 
 class Jeu:
     def __init__(self):
@@ -42,4 +42,5 @@ class Jeu:
             tour += 1
 
         print("\n=== Partie terminée ===")
+
 
