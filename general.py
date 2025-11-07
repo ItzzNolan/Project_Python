@@ -447,3 +447,86 @@ class TestGameView:
 
 #Variable globale geree par le simulateur pour le cooldown
 CURRENT_TICK = 0
+
+def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
+    """Execute un tick de simulation qui appele chaque general pour obtenir des ordres,
+    qui applique les MOVEs (pas d'1 tile vers la target), qui applique les ATTACKs si la cible
+    est a la portee et si le cooldown est ok, met a jour last_attack_tick et hp
+    puis affiche un resume du tick
+    """
+    global CURRENT_TICK
+    #Synchronise la var globale typiquement
+    CURRENT_TICK = gameView.tick
+
+    """Creation d'un dictionnaire <<id_to_unit>> où chaque cle est l'identifiant (id) 
+    d'une unite et la valeur est l'objet TestUnit correspondant
+    On accede rapidement a une unite donnee par son identifiant
+    """
+    id_to_unit:Dict[int, TestUnit] = {unit.id:unit for unit in(gameView.allies + gameView.enemies)}
+
+    """Recuperer les ordres de chaque general pour les unites qu'il controle"""
+    all_orders:List[Action] = []
+    for id_player, general in generals.items():
+        #On selectionne les unites vivantes appartenant a ce joueur pour prepare un interface de jeu adapte au General
+        units_for_player = [unit for unit in (gameView.allies + gameView.enemies) if unit.owner == id_player and unit.is_alive]
+        orders = general.decider_actions(units_for_player, gameView)
+        all_orders.extend(orders)
+    
+    """On trie les ordres de mouvements (MOVE) et les ordres d'attaques (ATTACK)"""
+    move_orders:Dict[int, Action] = {}
+    attack_orders:Dict[int, Action] = {}
+    for act in all_orders:
+        if act.type == TypeAction.MOVE:
+            move_orders[act.unit_id] = act
+        elif act.type == TypeAction.ATTACK:
+            attack_orders[act.unit_id] = act
+    #On ignore HOLD (pas de MOVE) et FORM_UP (traite comme un MOVE dans orders)
+
+    """Maintenant, on applique les mouvements (MOVE)"""
+    for uid, mov in move_orders.items():
+        unit = id_to_unit.get(uid)
+        #On cible la position
+        dest = mov.target_pos
+        #Test pas obligatoire mais conseille :)
+        if dest is None:
+            continue
+
+        #Coordonnes actuelles de l'unite et de la destination cible
+        ux, uy = unit.pos
+        tx, ty = dest
+        #Calcul des differences de position
+        dx = tx - ux
+        dy = ty - uy
+        #Choix de l'axe pour le deplacement
+        if abs(dx) >= abs(dy) and dx!=0:
+            move_to = (ux+(1 if dx > 0 else -1), uy)
+        elif dy!=0:
+            move_to = (ux, uy+(1 if dy > 0 else -1))
+        else:
+            move_to = (ux, uy) #Toujours la
+        
+        #Verifier si l'unite peut se deplacer 
+        if gameView.is_walkable(move_to):
+            unit.pos = move_to #Interchanger les postions
+    
+    """Desormais, on applique les attaques (ATTACK)"""
+    for uid, att in attack_orders.items():
+        attacker = id_to_unit.get(uid)
+
+        #Trouver la cible par id
+        target = id_to_unit.get(att.target_id) if att.target_id is not None else None
+        if target is None or not target.is_alive:
+            continue
+        
+        #On verifie la portee
+        dist  = gameView.distance_tiles(attacker.pos, target.pos)
+        if dist <= attacker.range and attacker.can_attack():
+            #On inflige les dmgs
+            target.hp -= attacker.attack_damage
+            attacker.last_attack_tick = CURRENT_TICK
+            #Limite hp à 0
+            if target.hp <= 0:
+                target.hp = 0
+        
+    #On incremente le tick global (dans l'objet gameView)
+    gameView.tick += 1
