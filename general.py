@@ -485,6 +485,9 @@ def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
     """Maintenant, on applique les mouvements (MOVE)"""
     for uid, mov in move_orders.items():
         unit = id_to_unit.get(uid)
+        if unit is None or not unit.is_alive:
+            continue
+
         #On cible la position
         dest = mov.target_pos
         #Test pas obligatoire mais conseille :)
@@ -512,6 +515,8 @@ def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
     """Desormais, on applique les attaques (ATTACK)"""
     for uid, att in attack_orders.items():
         attacker = id_to_unit.get(uid)
+        if attacker is None or not attacker.is_alive:
+            continue
 
         #Trouver la cible par id
         target = id_to_unit.get(att.target_id) if att.target_id is not None else None
