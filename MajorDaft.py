@@ -7,7 +7,7 @@ class MajorDaft:
         self.portee = portee
 
     def distance(self, u1, u2):
-        return abs(u1.x - u2.x) + abs(u1.y - u2.y)   # distance de Manhattan ou autre selon ton jeu
+        return abs(u1.x - u2.x) + abs(u1.y - u2.y)   # distance 
 
     def direction_vers(self, u1, u2):
         """Retourne un vecteur (dx, dy) indiquant la direction vers l’ennemi."""
@@ -47,3 +47,4 @@ class MajorDaft:
                 actions.append(('DEPLACER', direction))
 
         return actions
+
