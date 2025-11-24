@@ -3,9 +3,7 @@
 from backend.carte import Carte
 
 class Jeu:
-    def __init__(self):
-        m: int 
-        n: int
+    def __init__(self, m: int = 10, n: int = 10):
         # Instance de Carte
         self.carte = Carte(m , n)  # m et n sont les dimensions de la carte
         # Liste de toutes les unités dans le jeu
