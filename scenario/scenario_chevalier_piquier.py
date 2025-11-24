@@ -1,7 +1,7 @@
 from backend.carte import Carte
 from backend.Units import Unit  
 from backend.jeu import Jeu
-from ia import MajorDraft
+from ia.general import MajorDAFT
 
 
 def scenario_piquiers_vs_chevaliers():  
@@ -12,8 +12,8 @@ def scenario_piquiers_vs_chevaliers():
     jeu.carte = carte  # si la classe Jeu possède un attribut "carte"
 
     # 2. Créer les généraux
-    general_joueur1 = MajorDraft("Joueur 1")
-    general_joueur2 = MajorDraft("Joueur 2")
+    general_joueur1 = MajorDAFT("Joueur 1")
+    general_joueur2 = MajorDAFT("Joueur 2")
 
     # 3. Ajouter les unités sur la carte
     # --- Piquiers (joueur 1)
