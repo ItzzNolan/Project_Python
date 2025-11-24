@@ -5,7 +5,7 @@
 
 #import
 
-from carte import Carte
+from backend.carte import Carte
 
 class Jeu:
     def __init__(self,N,M):
@@ -46,9 +46,9 @@ class Jeu:
               
                 # Ici, on exécuterait les actions (déplacements, attaques)
 
-            for action in actions:
-                print(action)
-
+                for action in actions:
+                    print(action)
+    
             print(f"{general.__class__.__name__} a fini ses actions.")
 
             tour += 1
