@@ -452,7 +452,11 @@ def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
     """Execute un tick de simulation qui appele chaque general pour obtenir des ordres,
     qui applique les MOVEs (pas d'1 tile vers la target), qui applique les ATTACKs si la cible
     est a la portee et si le cooldown est ok, met a jour last_attack_tick et hp
-    puis affiche un resume du tick
+    puis affiche un resume du tick avec des logs complets :
+    -actions donnees par chaque general
+    -mouvements effectues
+    -attaques + degats infliges
+    -etat final des units
     """
     global CURRENT_TICK
     #Synchronise la var globale typiquement
@@ -465,28 +469,32 @@ def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
     id_to_unit:Dict[int, TestUnit] = {unit.id:unit for unit in(gameView.allies + gameView.enemies)}
 
     """Recuperer les ordres de chaque general pour les unites qu'il controle"""
-    all_orders:List[Action] = []
+    all_orders:Dict[int, Action] = {}
     for id_player, general in generals.items():
         #On selectionne les unites vivantes appartenant a ce joueur pour prepare un interface de jeu adapte au General
         units_for_player = [unit for unit in (gameView.allies + gameView.enemies) if unit.owner == id_player and unit.is_alive]
         orders = general.decider_actions(units_for_player, gameView)
-        all_orders.extend(orders)
+
+        print(f"\n---Ordres donnes par {general.name} (Player {id_player})---")
+        if not orders:
+            print("Aucuns ordres donnes")
+        for act in orders:
+            all_orders[act.unit_id] = act
+            print(f"\n---Unit{act.unit_id} -> {act.type.name}" + (f" vers {act.target_pos}" if act.target_pos else "") + (f" cible Unit{act.target_id}" if act.target_id else ""))
     
     """On trie les ordres de mouvements (MOVE) et les ordres d'attaques (ATTACK)"""
-    move_orders:Dict[int, Action] = {}
-    attack_orders:Dict[int, Action] = {}
-    for act in all_orders:
-        if act.type == TypeAction.MOVE:
-            move_orders[act.unit_id] = act
-        elif act.type == TypeAction.ATTACK:
-            attack_orders[act.unit_id] = act
-    #On ignore HOLD (pas de MOVE) et FORM_UP (traite comme un MOVE dans orders)
+    move_orders = {uid: act for uid, act in all_orders.items() if act.type == TypeAction.MOVE}
+    attack_orders = {uid: act for uid, act in all_orders.items() if act.type == TypeAction.ATTACK}
+
+    print("\n---MOUVEMENTS---")
 
     """Maintenant, on applique les mouvements (MOVE)"""
     for uid, mov in move_orders.items():
         unit = id_to_unit.get(uid)
         if unit is None or not unit.is_alive:
             continue
+
+        before = unit.pos #pos avant deplacement
 
         #On cible la position
         dest = mov.target_pos
@@ -511,7 +519,13 @@ def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
         #Verifier si l'unite peut se deplacer 
         if gameView.is_walkable(move_to):
             unit.pos = move_to #Interchanger les postions
+
+        unit.pos = move_to
+        after = unit.pos #pos apres deplacement
+        print(f"\n-> Unit{uid} se déplace de {before} à {after}")
     
+    
+    print("\n---ATTAQUES---")
     """Desormais, on applique les attaques (ATTACK)"""
     for uid, att in attack_orders.items():
         attacker = id_to_unit.get(uid)
@@ -526,15 +540,26 @@ def tick_simulation(gameView:TestGameView, generals:Dict[int, General]) -> None:
         #On verifie la portee
         dist  = gameView.distance_tiles(attacker.pos, target.pos)
         if dist <= attacker.range and attacker.can_attack():
+            before_hp = target.hp
             #On inflige les dmgs
             target.hp -= attacker.attack_damage
             attacker.last_attack_tick = CURRENT_TICK
             #Limite hp à 0
             if target.hp <= 0:
                 target.hp = 0
+            
+            print(f"\n-> Unit{uid} attaque Unit{target.id} ")
+            print(f"pour {attacker.attack_damage} dégats ")
+            print(f"(HP {before_hp} -> {target.hp})")
+        else:
+            print(f"\n-> Unit{uid} voulait attaquer Unit{att.target_id} mais n'est pas en portee")
         
     #On incremente le tick global (dans l'objet gameView)
     gameView.tick += 1
+
+    print("\n---ETAT APRES TICK---")
+    for unit in sorted(id_to_unit.values(), key=lambda x:(x.owner, x.id)):
+        print(f"Unit{unit.id:02d} (Player{unit.owner}) pos={unit.pos} hp={unit.hp}")
 
 def print_state(gameView:TestGameView) -> None:
     """Affiche l'etat des unites pour le debugging et les tests"""
