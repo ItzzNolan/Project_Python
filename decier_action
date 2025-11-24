@@ -1,0 +1,50 @@
+             
+
+                #liste des actions : 
+             """    move_to()
+                retreat_to()
+
+                intercept()
+                hold_position()
+                
+                attack_target()
+
+                attack_closest()
+
+
+
+                set_formation()
+                suicide_attack()
+
+                focus_fire()
+ """
+
+
+     def general.decider_actions(self,unites_alliees):
+        actions = []
+        
+
+        for unite in unites_alliees:
+            actions.append({
+                "type": "move_to",
+                "unite": unite.id,
+                "params": (destination)
+        })
+            
+            actions.append({
+                "type": "retreat_to",
+                "unite": unite.id,
+                "params":(destintation)
+            })
+
+            actions.append({
+                "type": "hold_position",
+                "unite": unite.id,
+            })
+ 
+ 
+            actions.append({
+                "type": "attack_target",
+                "unite": unite.id,
+                "params": unite.id,
+            })
