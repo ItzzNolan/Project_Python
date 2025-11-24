@@ -221,7 +221,7 @@ class MajorDAFT(General):
         score += random.random() * 0.01
         return score
     
-    def _avoid_crowd(self, unit:UnitView, allies:List[UnitView], dest:Cord):
+    def _avoid_crowd(self, unit, allies, dest):
         """Si plusieurs allies se dirigent vers la meme case, on decale la destination
         d'une case dans une direction perpendiculaire pour repartir les unites et eviter la congestion
         """
@@ -396,7 +396,8 @@ class TestUnit:
     def can_attack(self):
         #Suppose qu'on accede a la variable globale CURRENT_TICK dans le simulateur
         global CURRENT_TICK
-        return (self.is_alive and ((CURRENT_TICK - self.last_attack_tick) >= self.attack_cd_ticks))
+        #return (self.is_alive and ((CURRENT_TICK - self.last_attack_tick) >= self.attack_cd_ticks))
+        return (CURRENT_TICK - self.last_attack_tick) >= self.attack_cd_ticks
 
 @dataclass
 class TestGameView:
@@ -409,14 +410,20 @@ class TestGameView:
     """allies: List[TestUnit]
     enemies: List[TestUnit]"""
     units:List[TestUnit] #Toutes les units (owner 0 et owner 1)
+    width:int = 12
+    height:int = 12
 
     def distance_tiles(self, x, y):
         return abs(x[0]-y[0]) + abs(x[1]-y[1])
-
+    
+    #---RAYCAST LOS---#
+    def raycast(self, x:Cord, y:Cord) -> bool:
+        """Rayon LOS simple (pas d'obstacles pour l'instant)"""
+        return True
 
     def enemy_in_los(self, unit):
         #LOS = distance <= 5 tiles
-        return [e for e in self.units if e.is_alive and e.owner!=unit.owner and self.distance_tiles(unit.pos, e.pos) <= 5]
+        return [e for e in self.units if e.is_alive and e.owner!=unit.owner and self.distance_tiles(unit.pos, e.pos) <= 5 and self.raycast(unit.pos, e.pos)]
         
     def nearest_enemy(self, unit):
         alive = [e for e in self.units if e.is_alive and e.owner!=unit.owner]
@@ -430,6 +437,19 @@ class TestGameView:
         
     def is_walkable(self, a):
         return True
+    
+    #---MAP ASCII---#
+    def map_ascii(self) -> List[str]:
+        grid = [["." for _ in range(self.width)] for _ in range(self.height)]
+
+        for unit in self.units:
+            if not unit.is_alive:
+                continue
+            x, y = unit.pos
+            if 0 <= x < self.width and 0 <= y < self.height:
+                grid[x][y] = str(unit.owner)
+
+        return ["".join(row) for row in grid]
         
 
 # ----------------------------
@@ -438,6 +458,12 @@ class TestGameView:
 
 #Variable globale geree par le simulateur pour le cooldown
 CURRENT_TICK = 0
+
+def show_map(game:TestGameView):
+    print("\n---MAP---")
+    for row in game.map_ascii():
+        print(row)
+    print("")
 
 def tick_simulation(gameView:TestGameView, generals):
     """Execute un tick de simulation qui appele chaque general pour obtenir des ordres,
@@ -452,6 +478,8 @@ def tick_simulation(gameView:TestGameView, generals):
     global CURRENT_TICK
     #Synchronise la var globale typiquement
     CURRENT_TICK = gameView.tick
+
+    show_map(gameView)
 
     """Creation d'un dictionnaire <<id_to_unit>> où chaque cle est l'identifiant (id) 
     d'une unite et la valeur est l'objet TestUnit correspondant
