@@ -187,16 +187,45 @@ class General(abc.ABC):
 # ----------------------------
 
 class CaptainBraindead(General):
-    """General qui ne donne aucun ordre et qui sert de baseline"""
+    """General qui ne donne aucun ordre et qui sert de baseline
+    Maintenant : baseline simple de poursuite et d'attaque. 
+    Se deplace vers l'ennemi le plus proche s'il n'y en a aucun a portee
+    """
 
-    def __init__(self, id_player:int):
+    def __init__(self, id_player:int, chase_range:int = 999):
         super().__init__("Captain BRAINDEAD", id_player)
+        self.chase_range = chase_range #Si on veut limite la distance de chasse
 
-    def decider_actions(self, unit_ally, game):
-        """On choisit volontairement de ne rien ordonner []
-        Le moteur doit interpreter ça comme << laisser les unites suivre leur comportement par defaut >>
-        """
-        return []
+    def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
+        """Captain BrainDead Upgraded"""
+        orders:List[Action] = []
+        for unit in unit_ally:
+            if not unit.is_alive:
+                continue
+            #Enemies actuellement visibles : preference (raycast + LOS distance)
+            visibles = game.enemy_in_los(unit)
+            if visibles:
+                #Trouver un ennemi dans la range a attaquer
+                in_range = [e for e in visibles if game.distance_tiles(unit.pos, e.pos) <= unit.range]
+                if in_range and unit.can_attack():
+                    target = min(in_range, key = lambda e:e.hp)
+                    orders.append(self._order_attack_focus(unit, target))
+                    continue
+                #Sinon on bouge vers l'ennemi le plus proche
+                target = min(visibles, key = lambda e:game.distance_tiles(unit.pos, e.pos))
+                orders.append(self._order_move_to(unit, target.pos))
+            else:
+                #Sinon on bouge vers l'ennemi le plus proche connu s'il y en a un
+                nearest = game.nearest_enemy(unit)
+                if nearest is None:
+                    orders.append(self._order_hold(unit))
+                else:
+                    #Limite optimale: Ne pas chasser un ennemi toujours trop loin
+                    if game.distance_tiles(unit.pos, nearest.pos) <= self.chase_range:
+                        orders.append(self._order_move_to(unit, nearest.pos))
+                    else:
+                        orders.append(self._order_hold(unit))
+        return orders
     
 class MajorDAFT(General):
     """General qui pour chaque unite, si une cible visible alors attaque la plus faible,
