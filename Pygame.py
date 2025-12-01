@@ -6,6 +6,7 @@
 import pygame
 import sys
 import random
+import math
 
 pygame.init()
 
@@ -23,6 +24,16 @@ MAP_H = 50
 
 SCREEN_W = 1000
 SCREEN_H = 700
+
+center_w = MAP_W//3
+center_h = MAP_H//3
+
+start_x = (MAP_W - center_w) // 2
+end_x = start_x + center_w
+
+start_y = (MAP_H - center_h) // 2
+end_y = start_y + center_h
+
 
 screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
 pygame.display.set_caption("Camera / Mouse → Grid")
@@ -53,7 +64,37 @@ def generate_map():
         grid.append(row)
     return grid
 
-grid = generate_map()
+def generate_map_gold():
+    grid = []
+    for y in range(MAP_H):
+        row = []
+        for x in range(MAP_W):
+            # Probabilités simples
+            r = random.random()
+            
+            if (start_x < x < end_x) and (start_y < y < end_y):
+                if r<0.7:
+                    row.append("G")
+                elif r < 0.8:
+                    row.append("F")  # ferme
+                elif r < 0.9:
+                     row.append("W")  # bois
+                else:
+                    row.append(".")  # vide
+
+            else:
+                if r < 0.1:
+                    row.append("W")  # bois
+                elif r < 0.2:
+                    row.append("F")  # ferme
+                else:
+                    row.append(".")  # vide
+        grid.append(row)
+    return grid
+
+
+
+grid = generate_map_gold()
 
 def draw_map():
     for y in range(MAP_H):
