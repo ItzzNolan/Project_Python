@@ -9,11 +9,13 @@ class Jeu:
     """
     Classe principale du jeu. Gère la carte, les unités et la boucle de jeu.
     """
-    def __init__(self):
+    def __init__(self,m: int=25,n:int=15):
         """
         Crée une Carte et une liste d'unités.
         """
-        self.carte = Carte(largeur=25, hauteur=15)
+        # Instance de Carte
+        self.carte = Carte(m , n)  # m et n sont les dimensions de la carte
+        # Liste de toutes les unités dans le jeu
         self.unites = []
         self._tour = 1
 
