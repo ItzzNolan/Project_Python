@@ -12,37 +12,39 @@ def scenario_piquiers_vs_chevaliers():
     jeu.carte = carte  # si la classe Jeu possède un attribut "carte"
 
     # 2. Créer les généraux
-    general_joueur1 = MajorDAFT("Joueur 1")
-    general_joueur2 = MajorDAFT("Joueur 2")
+    general_joueur1 = MajorDAFT(0)
+    general_joueur2 = MajorDAFT(1)
 
     # 3. Ajouter les unités sur la carte
     # --- Piquiers (joueur 1)
     for x in range(3):
         for y in range(10):
-            piquier = Unit("Piquier")
-            carte.placer_unite(piquier, x, y)
-            jeu.ajouter_unite(general_joueur1, piquier)  # selon ta classe Jeu
+            #piquier = Unit("Piquier")
+            #carte.placer_unite(piquier, x, y)
+            jeu.ajouter_unite("Pikeman",x,y,0)  # selon ta classe Jeu
 
     # --- Chevaliers (joueur 2)
     for x in range(7, 10):
         for y in range(10):
-            chevalier = Unit("Chevalier")
-            carte.placer_unite(chevalier, x, y)
-            jeu.ajouter_unite(general_joueur2, chevalier)
+            #chevalier = Unit("Chevalier")
+            #carte.placer_unite(chevalier, x, y)
+            jeu.ajouter_unite("Knight",x,y,1)
 
     # 4. Ajouter les joueurs au jeu
-    jeu.ajouter_joueur(general_joueur1)
-    jeu.ajouter_joueur(general_joueur2)
+    #jeu.ajouter_joueur(general_joueur1)
+    #jeu.ajouter_joueur(general_joueur2)
 
     # (optionnel) Afficher la carte
-    carte.afficher()
+    afficher(jeu)
 
-    # 5. Retourner le jeu complet
+    # 5. Lancer et retourner le jeu complet
+    while jeu.est_terminer!=True:
+        jeu.mettre_a_jour()
     return jeu
 
 if __name__ == "__main__":
     jeu = scenario_piquiers_vs_chevaliers()
-    jeu.lancer()  # ou toute autre méthode pour démarrer le jeu
+    #jeu.lancer()  # ou toute autre méthode pour démarrer le jeu
 
 
 
