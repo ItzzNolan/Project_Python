@@ -28,7 +28,7 @@ class Unit():
         self.Attack = self.def_stat('Attack',nomUnite)
         self.Armor = self.def_stat('Armor',nomUnite)
 
-
+        self.equipe = None
         self.coords = None 
         self.target = None
         self.alive = True
@@ -133,5 +133,6 @@ class Unit():
             new_x = x + dx * ratio
             new_y = y + dy * ratio
             self.coords = (new_x, new_y)
+
 
 
