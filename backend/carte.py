@@ -1,6 +1,5 @@
 # Ce fichier contient la classe qui représente le champ de bataille.
 from backend.Units import Unit
-
 class Carte:
     """
     Représente la carte du jeu, une grille 2D.
