@@ -34,3 +34,6 @@ https://gist.github.com/manvijain06/5094159ea61ab1a6f7cd
 
 random --- Generate pseudo-random numbers
 https://docs.python.org/3/library/random.html
+
+getattr()
+https://www.programiz.com/python-programming/methods/built-in/getattr

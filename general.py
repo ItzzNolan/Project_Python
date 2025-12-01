@@ -92,6 +92,9 @@ class GameView(Protocol):
     #Renvoie toutes les unites ennemies visibles par un joueur donne
     def all_seen_enemies(self, id_player:int) -> List[UnitView]:...
 
+    #Renvoie toutes les unites allies visibles par un joueur donne
+    def all_seen_allies(slef, id_player:int) -> List[UnitView]:...
+
     #Calcule la distance (en nombre de cases) entre deux coord
     def distance_tiles(self, x:Cord, y:Cord) -> int:...
 
@@ -232,12 +235,14 @@ class MajorDAFT(General):
     sinon avance vers l'ennemi le plus proches
     --> Evite la surexposition et respecte les cooldowns
     --> Supporte le regroupement des troupes
+    --> Etendre LOS and plus proche chemin selection pour eviter mouvements repetes
     """
 
-    def __init__(self, id_player:int, regroup_at:Optional[Cord] = None):
+    def __init__(self, id_player:int, regroup_at:Optional[Cord] = None, los_range:int = 12):
         super().__init__("Major DAFT", id_player)
         #Position de regroupement avant d'attaquer
         self.regroup_at = regroup_at
+        self.los_range = los_range
 
     def _threat_score(self, enemy:UnitView) -> float:
         """Algorithme : Plus la valeur est elevee, plus la cible est prioritaire!
@@ -250,10 +255,10 @@ class MajorDAFT(General):
         score += random.random() * 0.01
         return score
     
-    def _avoid_crowd(self, unit, allies, dest):
-        """Si plusieurs allies se dirigent vers la meme case, on decale la destination
+    """def _avoid_crowd(self, unit, allies, dest):
+        Si plusieurs allies se dirigent vers la meme case, on decale la destination
         d'une case dans une direction perpendiculaire pour repartir les unites et eviter la congestion
-        """
+        
 
         #Compteur des allies deja proches de la destination dest
         near_sum = sum(1 for a in allies if a.is_alive and (abs(a.pos[0]-dest[0]) + abs(a.pos[1]-dest[1])) <= 1)
@@ -261,14 +266,71 @@ class MajorDAFT(General):
             #Pas congestionne
             return dest
         
-        """On calcule un decalage (binaire) dependant de l'ID de l'unite, pour que les unites 
+        On calcule un decalage (binaire) dependant de l'ID de l'unite, pour que les unites 
         ne choisissent pas toutes la meme direction
-        """
         d_x = (unit.id % 2)#*1-0 0 ou 1
         d_y = ((unit.id >> 1)% 2)#*1-0
         new_dest = (dest[0]+d_x, dest[1]+d_y)
         return new_dest
+        """
+    def _neighbour_step_towards(self, from_pos:Cord, to_pos:Cord, occupied:set, game:GameView) -> Cord:
+        """Renvoie un voisin à un seul pas (4 directions) à partir de from_pos qui reduit la distance vers to_pos.
+        Essaie d'abord l'axe prefere, sinon essaie les alternatives. Evite si possible de marcher sur des cases occupees.
+        Cette fonction empeche l'oscillation car elle selectionne un voisin deterministe qui reduit la distance.
+        """
 
+        fx,fy = from_pos
+        tx,ty = to_pos
+        dx = tx-fx
+        dy = ty-fy
+        candidats:List[Cord] = []
+
+        #On choisit par preference l'axe avec le plus large delta
+        if abs(dx)>=abs(dy):
+            if dx>0:
+                candidats.append((fx+1, fy))
+            elif dx<0:
+                candidats.append((fx-1, fy))
+            #A la verticale
+            if dy>0:
+                candidats.append((fx, fy+1))
+            elif dy<0:
+                candidats.append((fx, fy-1))
+        else:
+            if dy>0:
+                candidats.append((fx, fy+1))
+            elif dy<0:
+                candidats.append((fx, fy-1))
+            if dx>0:
+                candidats.append((fx+1, fy))
+            elif dx<0:
+                candidats.append((fx-1, fy))
+        
+        #On rentre dans le fallback : on reste en position
+        candidats.append((fx, fy))
+
+        #On choisit par preference un candidat inoccupe et accessible à pied qui reduit la distance
+        best_dest = from_pos
+        best_dist = game.distance_tiles(from_pos, to_pos)
+        for c in candidats:
+            if not game.is_walkable(c):
+                continue
+            dest = game.distance_tiles(c, to_pos)
+            #Necessite dest < best_dist pour progresser, sauf si seul le maintien en position est possible
+            if dest<best_dist and c not in occupied:
+                return c
+            #Fallback
+            if dest<best_dist:
+                best_dest = c
+                best_dist = dest
+        
+        #Si rien ne reduit la distance ou si tous sont occupes, le candidat inoccupe
+        for c in candidats:
+            if game.is_walkable(c) and c not in occupied:
+                return c
+            
+        #Derniere chance : on retourne la meilleure destination
+        return best_dest
 
     def decider_actions(self, unit_ally, game):
         #Convertir l'iterable en liste car on veut plusieurs passes
@@ -280,7 +342,7 @@ class MajorDAFT(General):
         """Si une position de regroupement est demandee et que les troupes ne se sont pas encore regroupes
         On ordonne un FORM_UP (regroup) qu'on simule par des MOVE(s) vers la position regroup_at
         """
-        if self.regroup_at is not None:
+        if self.regroup_at is not None and allies:
             #Il faut determiner si la majorite des unites sont a portee du regroupement
             dist_sum = sum(game.distance_tiles(unit.pos, self.regroup_at) for unit in allies)
             average_dist = (dist_sum / len(allies) if allies else 0)
@@ -295,13 +357,16 @@ class MajorDAFT(General):
         #Rassembler la liste des ennemis visibles globalement
         seen_enemies = [e for e in game.all_seen_enemies(self.id_player) if e.owner!=self.id_player]
 
+        #Creer un ensemble de positions actuellement occupees (par des unites vivantes)
+        occupied = {unit.pos for unit in (getattr(game, "unit_ally", []) or []) if getattr(unit, "is_alive", False)}
+
         for unit in allies:
             """ #Ignorer les unites mortes par securite
             if not unit.is_alive():
                 continue """
 
             #Regarder les ennemis en LOS
-            visibles = [e for e in game.enemy_in_los(unit) if e.owner!=self.id_player]
+            visibles = [e for e in game.enemy_in_los(unit) if e.owner!=unit.owner]
             target = None
 
             if visibles:
@@ -325,21 +390,14 @@ class MajorDAFT(General):
                 orders.append(self._order_attack_focus(unit, target))
                 continue
 
-            #Calcul de la destination = pos de la cible
-            dest_raw = target.pos
-            dest = self._avoid_crowd(unit, allies, dest_raw)
+            #Calculer un seul pas vers la cible qui reduit la distance et evite les cases occupees
+            step = self._neighbour_step_towards(unit.pos, target.pos, occupied-{unit.pos}, game)
 
-            nearby_enemies = sum(1 for e in seen_enemies if game.distance_tiles(unit.pos, e.pos) <= 3)
-            nearby_allies = sum(1 for a in allies if game.distance_tiles(unit.pos, a.pos) <= 3)
+            #Marquer le pas dans le jeu d'occupation pour eviter que deux units choisissent la meme case au meme tick
+            occupied.discard(unit.pos)
+            occupied.add(step)
 
-            if not go_all and nearby_enemies > nearby_allies+1:
-                """In teste si se rapprocher est raisonnable 
-                (ne pas foncer sur plusieurs ennemis en cas d'inferiorite)
-                Si il y a plus d'ennemis visibles que d'allies proches, on garde une distance"""
-                orders.append(self._order_hold(unit))
-            else:
-                """Sinon on se rapproche normalement"""
-                orders.append(self._order_move_to(unit, dest))
+            orders.append(self._order_move_to(unit, step))
 
         return orders
 
@@ -426,7 +484,7 @@ class TestUnit:
         #Suppose qu'on accede a la variable globale CURRENT_TICK dans le simulateur
         global CURRENT_TICK
         #return (self.is_alive and ((CURRENT_TICK - self.last_attack_tick) >= self.attack_cd_ticks))
-        return (CURRENT_TICK - self.last_attack_tick) >= self.attack_cd_ticks
+        return (CURRENT_TICK - self.last_attack_tick) >= self.attack_cd_ticks and self.is_alive
 
 @dataclass
 class TestGameView:
@@ -441,6 +499,7 @@ class TestGameView:
     units:List[TestUnit] #Toutes les units (owner 0 et owner 1)
     width:int = 12
     height:int = 12
+    los_rad:int = 12 #Extension du LOS
 
     def distance_tiles(self, x, y):
         return abs(x[0]-y[0]) + abs(x[1]-y[1])
@@ -451,8 +510,14 @@ class TestGameView:
         return True
 
     def enemy_in_los(self, unit):
-        #LOS = distance <= 5 tiles
-        return [e for e in self.units if e.is_alive and e.owner!=unit.owner and self.distance_tiles(unit.pos, e.pos) <= 5 and self.raycast(unit.pos, e.pos)]
+        out:List[TestUnit] = []
+        for enemy in self.units:
+            if not enemy.is_alive or enemy.owner == unit.owner:
+                continue
+            dest = self.distance_tiles(unit.pos, enemy.pos)
+            if dest <= self.los_rad and self.raycast(unit.pos, enemy.pos):
+                out.append(enemy)
+        return out
         
     def nearest_enemy(self, unit):
         alive = [e for e in self.units if e.is_alive and e.owner!=unit.owner]
@@ -463,9 +528,13 @@ class TestGameView:
     def all_seen_enemies(self, id_player):
         #Ici on renvoie juste tous les ennemis vivants
         return [e for e in self.units if e.is_alive and e.owner!=id_player]
+    
+    def all_seen_allies(self, id_player):
+        return [a for a in self.units if a.is_alive and a.owner==id_player]
         
     def is_walkable(self, a):
-        return True
+        x,y = a
+        return 0<= x <self.width and 0<= y <self.height
     
     #---MAP ASCII---#
     def map_ascii(self) -> List[str]:
@@ -534,6 +603,10 @@ def tick_simulation(gameView:TestGameView, generals):
     move_orders = {uid: act for uid, act in all_orders.items() if act.type == TypeAction.MOVE}
     attack_orders = {uid: act for uid, act in all_orders.items() if act.type == TypeAction.ATTACK}
 
+    #Preparer l'occupation pour eviter les collisions
+    occupied_now = {unit.pos for unit in gameView.units if unit.is_alive}
+    reserved_next = set()
+
     print("\n---MOUVEMENTS---")
 
     """Maintenant, on applique les mouvements (MOVE)"""
@@ -564,11 +637,21 @@ def tick_simulation(gameView:TestGameView, generals):
         else:
             move_to = unit.pos #Toujours la
         
-        """#Verifier si l'unite peut se deplacer 
-        if gameView.is_walkable(move_to):
-            unit.pos = move_to #Interchanger les postions
-        """
+        #Verifier si l'unite peut se deplacer 
+        if not gameView.is_walkable(move_to) or (move_to in reserved_next and move_to!=unit.pos):
+            candidats = [ (ux+1, uy), (ux-1, uy), (ux, uy+1), (ux, uy-1) ]
+            candidats = [c for c in candidats if 0<=c[0]<gameView.width and 0<=c[1]<gameView.height]
+            candidats.sort(key = lambda c:gameView.distance_tiles(c, dest))
+            found = False
+            for c in candidats:
+                if gameView.is_walkable(c) and (c not in reserved_next):
+                    move_to = c
+                    found = True
+                    break
+            if not found:
+                move_to = unit.pos #On reste s'il bloque        
 
+        reserved_next.add(move_to)
         unit.pos = move_to
         after = unit.pos #pos apres deplacement
         print(f"\n-> Unit{uid} se déplace de {before} à {after}")
