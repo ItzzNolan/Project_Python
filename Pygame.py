@@ -6,7 +6,6 @@
 import pygame
 import sys
 import random
-import math
 
 pygame.init()
 
@@ -119,6 +118,58 @@ def draw_map():
                 )
             )
 
+
+
+#parametre de la minimap
+MINIMAP_SCALE = 1   # réduction 10%
+MINIMAP_PADDING = 10  # marge depuis le bord
+
+#fonction pour créer la minimap
+def draw_minimap():
+    # Taille en pixels de la minimap
+    mini_w = int(MAP_W * MINIMAP_SCALE)
+    mini_h = int(MAP_H * MINIMAP_SCALE)
+
+    # Position dans le coin inférieur droit
+    x0 = SCREEN_W - mini_w - MINIMAP_PADDING
+    y0 = SCREEN_H - mini_h - MINIMAP_PADDING
+
+    # Fond noir
+    pygame.draw.rect(screen, (0, 0, 0), (x0 - 2, y0 - 2, mini_w + 4, mini_h + 4))
+
+    # Génération pixel par pixel
+    for gy in range(MAP_H):
+        for gx in range(MAP_W):
+            tile = grid[gy][gx]
+            if tile == "W":
+                col = (34, 139, 34)
+            elif tile == "G":
+                col = (218, 165, 32)
+            elif tile == "F":
+                col = (194, 178, 128)
+            else:
+                col = (50, 205, 50)
+
+            px = int(x0 + gx * MINIMAP_SCALE)
+            py = int(y0 + gy * MINIMAP_SCALE)
+            
+            screen.set_at((px, py), col)
+
+    # Rectangle représentant la caméra
+    cam_x = int(offset_x / TILE_SIZE * MINIMAP_SCALE)
+    cam_y = int(offset_y / TILE_SIZE * MINIMAP_SCALE)
+    cam_w = int(SCREEN_W / TILE_SIZE * MINIMAP_SCALE)
+    cam_h = int(SCREEN_H / TILE_SIZE * MINIMAP_SCALE)
+
+    pygame.draw.rect(
+        screen, (255, 0, 0),   # rouge
+        (x0 + cam_x, y0 + cam_y, cam_w, cam_h),
+        1
+    )
+
+    return (x0, y0, mini_w, mini_h)
+
+
 #boucle principale 
 while True:
     dt = clock.tick(60)
@@ -138,6 +189,14 @@ while True:
             gy = (my + offset_y) // TILE_SIZE
             if 0 <= gx < MAP_W and 0 <= gy < MAP_H:
                 print(f"Clicked tile: ({gx}, {gy}) = {grid[gy][gx]}")
+
+             # clic sur minimap ?
+            mini_x, mini_y, mini_w, mini_h = minimap_rect
+            if mini_x <= mx <= mini_x + mini_w and mini_y <= my <= mini_y + mini_h:
+                rel_x = (mx - mini_x) / MINIMAP_SCALE
+                rel_y = (my - mini_y) / MINIMAP_SCALE
+                offset_x = int(rel_x * TILE_SIZE - SCREEN_W / 2)
+                offset_y = int(rel_y * TILE_SIZE - SCREEN_H / 2)
 
             if event.type == pygame.MOUSEWHEEL:
                  # zoom avec molette
@@ -179,6 +238,7 @@ while True:
         offset_y = int((offset_y + my) * TILE_SIZE / old_tile_size - my)
 
 
+
     #limite de la caméra
     max_offset_x = max(MAP_W * TILE_SIZE - SCREEN_W, 0)
     max_offset_y = max(MAP_H * TILE_SIZE - SCREEN_H, 0)
@@ -188,4 +248,5 @@ while True:
     # draw
     screen.fill((0,0,0))
     draw_map()
+    minimap_rect =draw_minimap()
     pygame.display.flip()
