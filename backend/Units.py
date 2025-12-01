@@ -1,6 +1,6 @@
 from csv import *
 import math
-
+import os
 class Unit():
     """
     Crée une classe générale Unit avec l'ensemble des statistiques me semblant interressantes (n'hesitez pas à me dire si quelque chose

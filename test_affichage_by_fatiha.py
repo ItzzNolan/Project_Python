@@ -6,7 +6,6 @@ from frontend.vue_terminal import afficher_jeu, FausseUnite
 def lancer_test_affichage():
     """Crée un faux scénario et l'affiche."""
     
-    # 1. On crée une VRAIE carte
     carte_de_test = Carte(largeur=30, hauteur=15)
 
     # 2. On crée une fausse liste d'unités
