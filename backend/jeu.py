@@ -197,4 +197,6 @@ class Jeu:
 
         # 3. Nettoyer les unités mortes
         self.unites = [u for u in self.unites if u.alive]
+        self._tour+=1
+
 
