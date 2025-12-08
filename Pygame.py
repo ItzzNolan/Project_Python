@@ -47,6 +47,7 @@ offset_x = 0
 offset_y = 0
 CAMERA_SPEED = 10
 
+
 #génerer la map avec des valeurs aléatoires
 def generate_map():
     grid = []
@@ -66,51 +67,25 @@ def generate_map():
         grid.append(row)
     return grid
 
-def generate_map_gold():
-    grid = []
-    for y in range(MAP_H):
-        row = []
-        for x in range(MAP_W):
-            # Probabilités simples
-            r = random.random()
-            
-            if (start_x < x < end_x) and (start_y < y < end_y):
-                if r<0.7:
-                    row.append("G")
-                elif r < 0.8:
-                    row.append("F")  # ferme
-                elif r < 0.9:
-                     row.append("W")  # bois
-                else:
-                    row.append(".")  # vide
-
-            else:
-                if r < 0.1:
-                    row.append("W")  # bois
-                elif r < 0.2:
-                    row.append("F")  # ferme
-                else:
-                    row.append(".")  # vide
-        grid.append(row)
-    return grid
 
 
 
-grid = generate_map_gold()
+grid = generate_map()
 
+""""
 def draw_map():
     for y in range(MAP_H):
         for x in range(MAP_W):
             tile = grid[y][x]
 
             if tile == "W":
-                color = (34, 139, 34)  # vert foncé 
+                color = (42, 97, 55)  # vert foncé 
             elif tile == "F":
-                color = (194, 178, 128)  # beige 
+                color = (194, 178, 128)  # marron
             elif tile == "G":
-                color = (218, 165, 32)  # or
+                color = (237, 179, 35)  # or
             else:
-                color = (50, 205, 50)  # vert clair
+                color = (50, 200, 37)  # vert clair
 
             pygame.draw.rect(screen, color,
                 pygame.Rect(
@@ -120,6 +95,7 @@ def draw_map():
                     TILE_SIZE
                 )
             )
+"""
 
 def grid_to_iso(x,y):
     iso_x = (x - y) * (TILE_SIZE // 2)
@@ -147,10 +123,10 @@ def draw_map_iso():
         for x in range(MAP_W):
 
             tile = grid[y][x]
-            if tile == "W":       color = (34, 139, 34)
+            if tile == "W":       color = (42, 97, 55)
             elif tile == "F":     color = (194, 178, 128)
-            elif tile == "G":     color = (218, 165, 32)
-            else:                 color = (50, 205, 50)
+            elif tile == "G":     color = (237, 179, 35)
+            else:                 color = (50, 200, 37)
 
             iso_x, iso_y = grid_to_iso(x, y)
             draw_tile_iso(color, iso_x, iso_y)
@@ -170,6 +146,7 @@ def iso_to_grid(mx, my):
 #parametre de la minimap
 MINIMAP_SCALE = 1  # pour modifier la taille
 MINIMAP_PADDING = 10  # marge depuis le bord
+# minimap_fullscreen = False utile si on fait version minimap global
 
 #fonction pour créer la minimap
 def draw_minimap():
@@ -254,6 +231,8 @@ while True:
                 mx, my = pygame.mouse.get_pos()
                 offset_x = int((offset_x + mx) * TILE_SIZE / old_tile_size - mx)
                 offset_y = int((offset_y + my) * TILE_SIZE / old_tile_size - my)
+
+              
 
     # touche pour controler la camera
     keys = pygame.key.get_pressed()
