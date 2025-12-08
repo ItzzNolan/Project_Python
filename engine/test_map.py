@@ -2,6 +2,8 @@
 
 from engine.map import GameMap
 from utils.serializer import Serializer
+from backend.Units import Unit
+
 
 def print_map_summary(game_map):
     print("\n=== Résumé de la carte ===")
@@ -23,7 +25,7 @@ def main():
 
     print("--- Chargement JSON ---")
     data = Serializer.load_json("save/test_map.json")
-    loaded_map = GameMap.from_dict(data)
+    loaded_map = GameMap.from_dict(data, Unit)
 
     print_map_summary(loaded_map)
 
