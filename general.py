@@ -539,6 +539,20 @@ class TestGameView:
 #Variable globale geree par le simulateur pour le cooldown
 CURRENT_TICK = 0
 
+def check_victory(gameView:TestGameView) -> Optional[int]:
+    #Verifier les equipes
+    alive_player_0 = [unit for unit in gameView.units if unit.owner==0 and unit.is_alive]
+    alive_player_1 = [unit for unit in gameView.units if unit.owner==1 and unit.is_alive]
+    
+    if not alive_player_0:
+        print("\nVICTOIRE DE L'EQUIPE 1")
+        return 1
+    if not alive_player_1:
+        print("\nVICTOIRE DE L'EQUIPE 2")
+        return 2
+    return None
+
+
 def show_map(game:TestGameView):
     print("\n---MAP---")
     for row in game.map_ascii():
@@ -691,6 +705,12 @@ def tick_simulation(gameView:TestGameView, generals):
                 target.hp = 0
             print(f"-> (AUTO) Unit{unit.id} attaque Unit{target.id} ")
             print(f"(HP {before} -> {target.hp})")
+
+    winner = check_victory(gameView)
+    if winner:
+        print(f"\nL'equipe {winner} a gagne")
+        return
+
     
     #On incremente le tick global (dans l'objet gameView)
     gameView.tick += 1
@@ -725,10 +745,16 @@ if __name__ == "__main__":
         TestUnit(1, 0, (0,0), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
         TestUnit(2, 0, (0,1), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
         TestUnit(3, 0, (1,0), hp=8, attack_range=2, attack_damage=2, attack_cd_ticks=3, unit_class="Archer"),
+        TestUnit(4, 0, (0,0), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
+        TestUnit(5, 0, (0,1), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
+        TestUnit(6, 0, (1,0), hp=8, attack_range=2, attack_damage=2, attack_cd_ticks=3, unit_class="Archer"),
     
         TestUnit(11, 1, (8,8), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
         TestUnit(12, 1, (8,7), hp=8, attack_range=2, attack_damage=2, attack_cd_ticks=3, unit_class="Archer"),
         TestUnit(13, 1, (7,8), hp=6, attack_range=1, attack_damage=4, attack_cd_ticks=3, unit_class="Pikeman"),
+        TestUnit(14, 1, (8,8), hp=10, attack_range=1, attack_damage=3, attack_cd_ticks=2, unit_class="Melee"),
+        TestUnit(15, 1, (8,7), hp=8, attack_range=2, attack_damage=2, attack_cd_ticks=3, unit_class="Archer"),
+        TestUnit(16, 1, (7,8), hp=6, attack_range=1, attack_damage=4, attack_cd_ticks=3, unit_class="Pikeman")
     ]
 
     #On initialise le gameView
@@ -744,7 +770,7 @@ if __name__ == "__main__":
     generals = {0:g1, 1:g2}
 
     """Maintenant on simule N ticks et on affiche l'etat des unites"""
-    TICKS = 20
+    TICKS = 100
 
     for _ in range(TICKS):
         print_state(gv)
