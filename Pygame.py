@@ -2,6 +2,9 @@
     Initialiser la fenêtre PyGame.<br>
     2. Créer un système de Caméra : variables offset_x, offset_y qui changent avec les touches ZQSD pour scroller la carte.<br>
     3. Convertir les coordonnées souris (écran) en coordonnées grille (logique) pour savoir sur quelle case on clique.
+
+
+     grid to iso pour passe à 2.5D
 """
 import pygame
 import sys
@@ -118,10 +121,54 @@ def draw_map():
                 )
             )
 
+def grid_to_iso(x,y):
+    iso_x = (x - y) * (TILE_SIZE // 2)
+    iso_y = (x + y) * (TILE_SIZE // 4)
+    return iso_x, iso_y
 
+def draw_tile_iso(color, iso_x, iso_y):
+    """ Dessine une tuile losange isométrique """
+
+    cx = iso_x - offset_x + SCREEN_W // 2
+    cy = iso_y - offset_y + 50  # décalage vertical esthétique
+
+    pts = [
+        (cx,                     cy - TILE_SIZE // 4),  # haut
+        (cx + TILE_SIZE // 2,    cy),                   # droite
+        (cx,                     cy + TILE_SIZE // 4),  # bas
+        (cx - TILE_SIZE // 2,    cy),                   # gauche
+    ]
+
+    pygame.draw.polygon(screen, color, pts)
+
+def draw_map_iso():
+    """ Dessine la map entière en isométrique """
+    for y in range(MAP_H):
+        for x in range(MAP_W):
+
+            tile = grid[y][x]
+            if tile == "W":       color = (34, 139, 34)
+            elif tile == "F":     color = (194, 178, 128)
+            elif tile == "G":     color = (218, 165, 32)
+            else:                 color = (50, 205, 50)
+
+            iso_x, iso_y = grid_to_iso(x, y)
+            draw_tile_iso(color, iso_x, iso_y)
+
+def iso_to_grid(mx, my):
+    """ Convertit position souris → coord grille isométrique """
+
+    # Remet dans l'espace isométrique
+    iso_x = mx + offset_x - SCREEN_W//2
+    iso_y = my + offset_y - 50
+
+    gx = (iso_y / (TILE_SIZE//4) + iso_x / (TILE_SIZE//2)) / 2
+    gy = (iso_y / (TILE_SIZE//4) - iso_x / (TILE_SIZE//2)) / 2
+
+    return int(gx), int(gy)
 
 #parametre de la minimap
-MINIMAP_SCALE = 1   # réduction 10%
+MINIMAP_SCALE = 1  # pour modifier la taille
 MINIMAP_PADDING = 10  # marge depuis le bord
 
 #fonction pour créer la minimap
@@ -185,12 +232,11 @@ while True:
             mx, my = pygame.mouse.get_pos()
 
             # conversion pixel écran en coord de grille
-            gx = (mx + offset_x) // TILE_SIZE
-            gy = (my + offset_y) // TILE_SIZE
+            gx,gy = iso_to_grid(mx,my)
             if 0 <= gx < MAP_W and 0 <= gy < MAP_H:
                 print(f"Clicked tile: ({gx}, {gy}) = {grid[gy][gx]}")
 
-             # clic sur minimap ?
+             # clic sur minimap 
             mini_x, mini_y, mini_w, mini_h = minimap_rect
             if mini_x <= mx <= mini_x + mini_w and mini_y <= my <= mini_y + mini_h:
                 rel_x = (mx - mini_x) / MINIMAP_SCALE
@@ -222,14 +268,14 @@ while True:
         offset_x += CAMERA_SPEED
 
     #Zoom avec le clavier
-    if keys[pygame.K_p]:
+    if keys[pygame.K_g]:
         old_tile_size = TILE_SIZE
         TILE_SIZE += ZOOM_STEP
         TILE_SIZE = min(TILE_SIZE, MAX_TILE)
         mx, my = SCREEN_W//2, SCREEN_H//2  # zoom centrée sur le centre de l'écran
         offset_x = int((offset_x + mx) * TILE_SIZE / old_tile_size - mx)
         offset_y = int((offset_y + my) * TILE_SIZE / old_tile_size - my)
-    if keys[pygame.K_m]:
+    if keys[pygame.K_n]:
         old_tile_size = TILE_SIZE
         TILE_SIZE -= ZOOM_STEP
         TILE_SIZE = max(TILE_SIZE, MIN_TILE)
@@ -247,6 +293,6 @@ while True:
 
     # draw
     screen.fill((0,0,0))
-    draw_map()
+    draw_map_iso()
     minimap_rect =draw_minimap()
     pygame.display.flip()
