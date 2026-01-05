@@ -7,9 +7,7 @@ from frontend.vue_terminal import afficher
 def scenario_piquiers_vs_chevaliers():  
 
     # 1. Créer le jeu et la carte
-    jeu = Jeu()
-    carte = Carte(10, 10)
-    jeu.carte = carte  # si la classe Jeu possède un attribut "carte"
+    jeu = Jeu(10, 10)
 
     # 2. Créer les généraux
     general_joueur1 = MajorDAFT(0)
