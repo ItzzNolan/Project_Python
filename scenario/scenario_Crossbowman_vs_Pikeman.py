@@ -4,7 +4,7 @@ from backend.jeu import Jeu
 from ia.general import MajorDAFT
 from frontend.vue_terminal import afficher
 
-def scenario_Crossbowman_vs_Cavalery_Archer():  
+def scenario_Crossbowman_vs_Pikeman():  
 
     # 1. Créer le jeu et la carte
     jeu = Jeu(10, 10)
@@ -19,10 +19,10 @@ def scenario_Crossbowman_vs_Cavalery_Archer():
         for y in range(10):
             jeu.ajouter_unite("Crossbowman",x,y,0)  
 
-    # --- Cavalery_Archer (joueur 2)
+    # --- Pikeman (joueur 2)
     for x in range(7, 10):
         for y in range(10):
-            jeu.ajouter_unite("Cavalery_Archer",x,y,1)
+            jeu.ajouter_unite("Pikeman",x,y,1)
 
     # 4. Lancer et retourner le jeu complet
     while not jeu.est_termine():
@@ -30,7 +30,7 @@ def scenario_Crossbowman_vs_Cavalery_Archer():
     return jeu
 
 if __name__ == "__main__":
-    scenario_Crossbowman_vs_Cavalery_Archer()
+    scenario_Crossbowman_vs_Pikeman()
 
 
 
