@@ -35,16 +35,13 @@ def scenario_piquiers_vs_chevaliers():
     #jeu.ajouter_joueur(general_joueur2)
 
     # (optionnel) Afficher la carte
-    afficher(jeu)
+    jeu.carte.afficher()
 
     # 5. Lancer et retourner le jeu complet
     while jeu.est_terminer!=True:
         jeu.mettre_a_jour()
     return jeu
 
-if __name__ == "__main__":
-    jeu = scenario_piquiers_vs_chevaliers()
-    #jeu.lancer()  # ou toute autre méthode pour démarrer le jeu
 
 
 
