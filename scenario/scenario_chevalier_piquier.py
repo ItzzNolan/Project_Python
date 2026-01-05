@@ -38,7 +38,7 @@ def scenario_piquiers_vs_chevaliers():
     jeu.carte.afficher()
 
     # 5. Lancer et retourner le jeu complet
-    while jeu.est_termine!=True:
+    while not jeu.est_termine():
         jeu.mettre_a_jour()
     return jeu
 
