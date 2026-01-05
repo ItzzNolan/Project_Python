@@ -1,6 +1,5 @@
 from csv import *
-
-
+import math
 class Unit():
     """
     Crée une classe générale Unit avec l'ensemble des statistiques me semblant interressantes (n'hesitez pas à me dire si quelque chose
@@ -9,7 +8,7 @@ class Unit():
     """
     def __init__(self,nomUnite):
         self.Unit = self.def_stat('Unit',nomUnite)
-        self.HP = self.def_stat('HP',nomUnite)
+        self.HP = int(self.def_stat('HP',nomUnite))
         #self.Type_Attack = self.def_stat('Type_Attack',nomUnite)
         #self.Attack = self.def_stat('Attack',nomUnite)
         #self.Armor = self.def_stat('Armor',nomUnite)
@@ -27,11 +26,13 @@ class Unit():
         
         self.Attack = self.def_stat('Attack',nomUnite)
         self.Armor = self.def_stat('Armor',nomUnite)
-
-
-        self.coords = None 
+        self.id=None
+        self.equipe = None
+        self.coords = None
+        self.hitbox=0.1
         self.target = None
         self.alive = True
+        self.timer=0
 
     def def_stat(self, stat, nomUnite):
         """
@@ -74,10 +75,69 @@ class Unit():
 
         damage=max(1,damage)
         self.target.take_damage(damage)
+        self.timer=0
+        return damage
 
     def take_damage(self, damage):
         self.HP-=damage
         if self.HP<=0:
             self.alive=False
+
+    def can_attack(self):
+        return float(self.timer)>=(self.Attack_Delay+self.Reload_Time)
+
+    def find_closest_target(self, all_units):
+        
+        if self.coords is None:
+            return None
+
+        x, y = self.coords
+        cible_proche = None
+        distance_min = float('inf')
+
+        for autre in all_units:
+            if autre is self:
+                continue  
+            if not autre.alive or autre.HP <= 0:
+                continue  
+            if not hasattr(autre, 'coords') or autre.coords is None:
+                continue  
+
+            dist = math.sqrt((x - autre.coords[0])**2 + (y - autre.coords[1])**2)    
+            if dist<= distance_min:
+                cible_proche = autre
+                distance_min = dist
+
+        self.target = cible_proche
+        return cible_proche
+    
+
+    def se_deplacer(self, destination, delta_t=1.0):
+       
+    
+        if self.coords is None:
+            print(f"L'unité {self.Unit} n'a pas de position initiale.")
+            return
+
+        x, y = self.coords
+        dest_x, dest_y = destination
+
+        dx = dest_x - x
+        dy = dest_y - y
+        distance = math.sqrt(dx**2 + dy**2)
+
+        if distance == 0:
+            return
+
+        distance_max = self.Speed * delta_t
+
+        if distance <= distance_max:
+            self.coords = (dest_x, dest_y)
+        else:
+           
+            ratio = distance_max / distance
+            new_x = x + dx * ratio
+            new_y = y + dy * ratio
+            self.coords = (new_x, new_y)
 
 
