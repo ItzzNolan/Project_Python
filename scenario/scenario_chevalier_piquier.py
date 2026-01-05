@@ -2,7 +2,7 @@ from backend.carte import Carte
 from backend.Units import Unit  
 from backend.jeu import Jeu
 from ia.general import MajorDAFT
-
+from frontend.vue_terminal import afficher
 
 def scenario_piquiers_vs_chevaliers():  
 
