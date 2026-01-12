@@ -5,6 +5,9 @@ from backend.carte import Carte
 from backend.Units import Unit  
 from frontend.vue_terminal import afficher
 
+debug_mode = False
+DEBUG = 1 if debug_mode else 0
+
 class Jeu:
     """
     Classe principale du jeu. Gère la carte, les unités et la boucle de jeu.
@@ -35,9 +38,9 @@ class Jeu:
             
             self.unites.append(nouvelle_unite)
             self.carte.placer_unite(nouvelle_unite, x, y)
-            print(f"{nom_unite} (équipe {equipe}) ajouté en ({x}, {y}).")
+            if DEBUG == 1: print(f"{nom_unite} (équipe {equipe}) ajouté en ({x}, {y}).")
         else:
-            print(f"ERREUR : Impossible d'ajouter {nom_unite} en ({x}, {y}), hors de la carte.")
+            if DEBUG == 1: print(f"ERREUR : Impossible d'ajouter {nom_unite} en ({x}, {y}), hors de la carte.")
 
     def est_termine(self) -> bool:
         """
@@ -49,10 +52,10 @@ class Jeu:
         
         # La partie est terminée si l'une des équipes n'a plus d'unités vivantes
         if not equipe_0_vivante:
-            print("\n*** L'EQUIPE ROUGE (1) A GAGNE ! ***")
+            ("\n*** L'EQUIPE ROUGE (1) A GAGNE ! ***")
             return True
         if not equipe_1_vivante:
-            print("\n*** L'EQUIPE BLEUE (0) A GAGNE ! ***")
+            ("\n*** L'EQUIPE BLEUE (0) A GAGNE ! ***")
             return True
             
         return False
@@ -158,42 +161,42 @@ class Jeu:
                 # Vérifier si l'ennemi est sur la même case (distance < 0.1 pour tolérance flottante)
                 if distance < 0.1:
                     # ATTAQUE AU CORPS A CORPS !
-                    print(f"[ATTAQUE MELEE] {unite.Unit} (equipe {unite.equipe}) attaque {ennemi.Unit} (equipe {ennemi.equipe}) sur la meme case")
+                    if DEBUG == 1: print(f"[ATTAQUE MELEE] {unite.Unit} (equipe {unite.equipe}) attaque {ennemi.Unit} (equipe {ennemi.equipe}) sur la meme case")
                     
                     unite.target = ennemi
                     unite.inflict_damage()
                     
-                    print(f"   {ennemi.Unit} a maintenant {max(0, ennemi.HP)} HP")
+                    if DEBUG == 1: print(f"   {ennemi.Unit} a maintenant {max(0, ennemi.HP)} HP")
                     
                     if not ennemi.alive:
-                        print(f"[MORT] {ennemi.Unit} est mort !")
+                        if DEBUG == 1: print(f"[MORT] {ennemi.Unit} est mort !")
                         self.carte.retirer_unite(ennemi)
                 else:
                     # SE DÉPLACER vers l'ennemi pour être sur la même case
                     ennemi_x, ennemi_y = ennemi.coords
-                    print(f"[DEPLACEMENT] {unite.Unit} (equipe {unite.equipe}) se deplace vers {ennemi.Unit}")
+                    if DEBUG == 1: print(f"[DEPLACEMENT] {unite.Unit} (equipe {unite.equipe}) se deplace vers {ennemi.Unit}")
                     self.deplacer_unite(unite, ennemi_x, ennemi_y)
-                    print(f"   Nouvelle position : {unite.coords}")
+                    if DEBUG == 1: print(f"   Nouvelle position : {unite.coords}")
             else:
                 # Pour les unités à distance
                 if distance <= portee:
                     # ATTAQUE A DISTANCE !
-                    print(f"[ATTAQUE DISTANCE] {unite.Unit} (equipe {unite.equipe}) attaque {ennemi.Unit} (equipe {ennemi.equipe}) a distance {distance:.1f}")
+                    if DEBUG == 1: print(f"[ATTAQUE DISTANCE] {unite.Unit} (equipe {unite.equipe}) attaque {ennemi.Unit} (equipe {ennemi.equipe}) a distance {distance:.1f}")
                     
                     unite.target = ennemi
                     unite.inflict_damage()
                     
-                    print(f"   {ennemi.Unit} a maintenant {max(0, ennemi.HP)} HP")
+                    if DEBUG == 1: print(f"   {ennemi.Unit} a maintenant {max(0, ennemi.HP)} HP")
                     
                     if not ennemi.alive:
-                        print(f"[MORT] {ennemi.Unit} est mort !")
+                        if DEBUG == 1: print(f"[MORT] {ennemi.Unit} est mort !")
                         self.carte.retirer_unite(ennemi)
                 else:
                     # SE DÉPLACER vers la portée d'attaque
                     ennemi_x, ennemi_y = ennemi.coords
-                    print(f"[DEPLACEMENT] {unite.Unit} (equipe {unite.equipe}) se deplace vers portee d'attaque")
+                    if DEBUG == 1: print(f"[DEPLACEMENT] {unite.Unit} (equipe {unite.equipe}) se deplace vers portee d'attaque")
                     self.deplacer_unite(unite, ennemi_x, ennemi_y)
-                    print(f"   Nouvelle position : {unite.coords}")
+                    if DEBUG == 1: print(f"   Nouvelle position : {unite.coords}")
 
         # 3. Nettoyer les unités mortes
         self.unites = [u for u in self.unites if u.alive]
