@@ -392,10 +392,45 @@ class ColonelTURTLE(General):
      - Recul si HP faible
     """
 
-    def __init__(self, id_player:int, safe_hp:int = 4, formation_radius:int = 2):
+    def __init__(self, id_player:int, safe_hp:int = 3, local_radius:int = 3, formation_radius:int = 2):
         super().__init__("Colonel TURTLE", id_player)
         self.safe_hp = safe_hp
+        self.local_radius = local_radius
         self.formation_radius = formation_radius
+
+    def _nearest_enemy(self, unit:UnitView, game:GameView) -> Optional[UnitView]:
+        enemies = game.all_seen_enemies(self.id_player)
+        if not enemies:
+            return None
+        return min(enemies, key = lambda e: game.distance_tiles(unit.pos, e.pos))
+    
+    def _local_counts(self, unit:UnitView, game:GameView) -> tuple[int, int]:
+        allies = [
+            a for a in game.all_seen_allies(self.id_player) if game.distance_tiles(unit.pos, a.pos) <= self.local_radius
+        ]
+        enemies = [
+            e for e in game.all_seen_enemies(self.id_player) if game.distance_tiles(unit.pos, e.pos) <= self.local_radius
+        ]
+        
+        return len(allies), len(enemies)
+    
+    def _retreat_step(self, unit:UnitView, enemy:UnitView, game:GameView) -> Cord:
+        ux, uy = unit.pos
+        ex, ey = enemy.pos
+
+        dx = ux - ex
+        dy = uy - ey
+
+        candidates = [
+            (ux+(1 if dx>=0 else -1), uy),
+            (ux, uy+(1 if dy>=0 else -1)),
+        ]
+
+        for c in candidates:
+            if game.is_walkable(c):
+                return c
+        
+        return unit.pos
 
     #Centre(s) de formation(s)
     def _formation_center(self, allies:List[UnitView]) -> Cord:
@@ -413,19 +448,16 @@ class ColonelTURTLE(General):
         center = self._formation_center(allies)
 
         for unit in allies:
+            nearest_enemy = self._nearest_enemy(unit, game)
             #Si les HPs de l'unit sont faibles...
-            if unit.hp <= self.safe_hp:
+            if unit.hp <= self.safe_hp and nearest_enemy:
                 #...Recul simple -> on s'eloigne du centre 
-                dx = unit.pos[0] - center[0]
-                dy = unit.pos[1] - center[1]
-                retreat = (
-                    unit.pos[0]+(1 if dx>=0 else -1),
-                    unit.pos[1]+(1 if dy>=0 else -1)
-                )
+                retreat = self._retreat_step(unit, nearest_enemy, game)
+                orders.append(self._order_move_to(unit, retreat))
+                continue
 
-                if game.is_walkable(retreat):
-                    orders.append(self._order_move_to(unit, retreat))
-                    continue
+            #Analyse locale
+            allies_n, enemies_n = self._local_counts(unit, game)
 
             #Attaques uniquement a portee
             seen = game.enemy_in_los(unit)
@@ -433,17 +465,32 @@ class ColonelTURTLE(General):
                 enemy for enemy in seen if game.distance_tiles(unit.pos, enemy.pos) <= unit.range
             ]
 
-            if in_range and unit.can_attack():
-                target = min(in_range, key = lambda enemy: enemy.hp)
-                orders.append(self._order_attack_focus(unit, target))
-                continue
+            #Enemi isole = Aucun autre ennemi proche
+            isolated = (len(seen)==1 and enemies_n==1)
 
-            #Maintenir la formation
+            #Attaque opportuniste
+            if unit.can_attack() and (in_range or isolated or allies_n>enemies_n):
+                target = min(seen, key = lambda enemy: enemy.hp) if seen else None
+                if target:
+                    orders.append(self._order_attack_focus(unit, target))
+                    continue
+
+            #Maintenir la formation dynamique
             dist_to_center = game.distance_tiles(unit.pos, center)
-            if dist_to_center > self.formation_radius:
-                orders.append(self._order_move_to(unit, center))
+
+            #Melees devant
+            if unit.unit_class.lower() in ("melee", "pikeman"):
+                if nearest_enemy:
+                    orders.append(self._order_move_to(unit, nearest_enemy.pos))
+                else:
+                    orders.append(self._order_hold(unit))
+
+            #Archers derriere           
             else:
-                orders.append(self._order_hold(unit))
+                if dist_to_center > self.formation_radius:
+                    orders.append(self._order_move_to(unit, center))
+                else:
+                    orders.append(self._order_hold(unit))
             
         return orders
     
@@ -832,11 +879,12 @@ if __name__ == "__main__":
 
     #CaptainBraindead pour l'equipe 2 pour voir la difference
     g2 = ColonelTURTLE(id_player=1)
+    #g2 = MajorDAFT(id_player=1, regroup_at=(5,4))
 
     generals = {0:g1, 1:g2}
 
     """Maintenant on simule N ticks et on affiche l'etat des unites"""
-    TICKS = 25
+    TICKS = 100
 
     for _ in range(TICKS):
         print_state(gv)
