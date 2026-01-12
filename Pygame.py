@@ -4,11 +4,13 @@
     3. Convertir les coordonnées souris (écran) en coordonnées grille (logique) pour savoir sur quelle case on clique.
 
 
-     grid to iso pour passe à 2.5D
+     grid to iso pour passer à 2.5D
+
+    Première version /obsolète
 """
 import pygame
 import sys
-import random
+from game_state import Gamestate
 
 pygame.init()
 
@@ -37,15 +39,27 @@ start_y = (MAP_H - center_h) // 2
 end_y = start_y + center_h
 
 
+
+
 screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
 pygame.display.set_caption("Camera / Mouse → Grid")
 
+GRASS_TILE = pygame.image.load("assets/grass.png").convert_alpha() #image a changer
+
 clock = pygame.time.Clock()
 
-#pour la caméra
-offset_x = 0
-offset_y = 0
-CAMERA_SPEED = 10
+
+# -------------------------
+# CAMERA
+# -------------------------
+class Camera:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.speed = 15
+
+camera = Camera()
+
 
 
 #génerer la map avec des valeurs aléatoires
@@ -102,41 +116,38 @@ def grid_to_iso(x,y):
     iso_y = (x + y) * (TILE_SIZE // 4)
     return iso_x, iso_y
 
-def draw_tile_iso(color, iso_x, iso_y):
+def draw_tile_iso(iso_x, iso_y):
     """ Dessine une tuile losange isométrique """
+    tile = pygame.transform.scale(
+        GRASS_TILE,
+        (TILE_SIZE, TILE_SIZE // 2)
+    )
 
-    cx = iso_x - offset_x + SCREEN_W // 2
-    cy = iso_y - offset_y + 50  # décalage vertical esthétique
+    cx = iso_x - camera.x + SCREEN_W // 2
+    cy = iso_y - camera.y + 50
 
-    pts = [
-        (cx,                     cy - TILE_SIZE // 4),  # haut
-        (cx + TILE_SIZE // 2,    cy),                   # droite
-        (cx,                     cy + TILE_SIZE // 4),  # bas
-        (cx - TILE_SIZE // 2,    cy),                   # gauche
-    ]
+    screen.blit(
+        tile,
+        (cx - TILE_SIZE // 2, cy - TILE_SIZE // 4)
+    )
 
-    pygame.draw.polygon(screen, color, pts)
+# -------------------------
+# DRAW MAP
+# -------------------------
 
 def draw_map_iso():
     """ Dessine la map entière en isométrique """
     for y in range(MAP_H):
         for x in range(MAP_W):
-
-            tile = grid[y][x]
-            if tile == "W":       color = (42, 97, 55)
-            elif tile == "F":     color = (194, 178, 128)
-            elif tile == "G":     color = (237, 179, 35)
-            else:                 color = (50, 200, 37)
-
             iso_x, iso_y = grid_to_iso(x, y)
-            draw_tile_iso(color, iso_x, iso_y)
+            draw_tile_iso(iso_x, iso_y)
 
 def iso_to_grid(mx, my):
     """ Convertit position souris → coord grille isométrique """
 
     # Remet dans l'espace isométrique
-    iso_x = mx + offset_x - SCREEN_W//2
-    iso_y = my + offset_y - 50
+    iso_x = mx + camera.x - SCREEN_W//2
+    iso_y = my + camera.y - 50
 
     gx = (iso_y / (TILE_SIZE//4) + iso_x / (TILE_SIZE//2)) / 2
     gy = (iso_y / (TILE_SIZE//4) - iso_x / (TILE_SIZE//2)) / 2
@@ -173,15 +184,15 @@ def draw_minimap():
                 col = (194, 178, 128)
             else:
                 col = (50, 205, 50)
-
+                        
             px = int(x0 + gx * MINIMAP_SCALE)
             py = int(y0 + gy * MINIMAP_SCALE)
             
             screen.set_at((px, py), col)
 
     # Rectangle représentant la caméra
-    cam_x = int(offset_x / TILE_SIZE * MINIMAP_SCALE)
-    cam_y = int(offset_y / TILE_SIZE * MINIMAP_SCALE)
+    cam_x = int(camera.x / TILE_SIZE * MINIMAP_SCALE)
+    cam_y = int(camera.y / TILE_SIZE * MINIMAP_SCALE)
     cam_w = int(SCREEN_W / TILE_SIZE * MINIMAP_SCALE)
     cam_h = int(SCREEN_H / TILE_SIZE * MINIMAP_SCALE)
 
@@ -204,47 +215,40 @@ while True:
             pygame.quit()
             sys.exit()
 
-        # click gauche : montrer tile coord
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = pygame.mouse.get_pos()
-
-            # conversion pixel écran en coord de grille
-            gx,gy = iso_to_grid(mx,my)
+            gx, gy = iso_to_grid(mx, my)
             if 0 <= gx < MAP_W and 0 <= gy < MAP_H:
-                print(f"Clicked tile: ({gx}, {gy}) = {grid[gy][gx]}")
+                print(f"Clicked tile ({gx},{gy}) = {grid[gy][gx]}")
 
-             # clic sur minimap 
-            mini_x, mini_y, mini_w, mini_h = minimap_rect
-            if mini_x <= mx <= mini_x + mini_w and mini_y <= my <= mini_y + mini_h:
-                rel_x = (mx - mini_x) / MINIMAP_SCALE
-                rel_y = (my - mini_y) / MINIMAP_SCALE
-                offset_x = int(rel_x * TILE_SIZE - SCREEN_W / 2)
-                offset_y = int(rel_y * TILE_SIZE - SCREEN_H / 2)
+            mini = draw_minimap()
+            if mini:
+                mx0, my0, mw, mh = mini
+                if mx0 <= mx <= mx0 + mw and my0 <= my <= my0 + mh:
+                    camera.x = int((mx - mx0) * TILE_SIZE - SCREEN_W / 2)
+                    camera.y = int((my - my0) * TILE_SIZE - SCREEN_H / 2)
 
-            if event.type == pygame.MOUSEWHEEL:
-                 # zoom avec molette
-                old_tile_size = TILE_SIZE
-                TILE_SIZE += event.y * ZOOM_STEP
-                TILE_SIZE = max(MIN_TILE, min(MAX_TILE, TILE_SIZE))
+        # Mouse wheel zoom
+        if event.type == pygame.MOUSEWHEEL:
+            old = TILE_SIZE
+            TILE_SIZE += event.y * ZOOM_STEP
+            TILE_SIZE = max(MIN_TILE, min(MAX_TILE, TILE_SIZE))
+            mx, my = pygame.mouse.get_pos()
+            camera.x = int((camera.x + mx) * TILE_SIZE / old - mx)
+            camera.y = int((camera.y + my) * TILE_SIZE / old - my)
 
-                # Ajuste offset pour que la souris reste sur la même tile après zoom
-                mx, my = pygame.mouse.get_pos()
-                offset_x = int((offset_x + mx) * TILE_SIZE / old_tile_size - mx)
-                offset_y = int((offset_y + my) * TILE_SIZE / old_tile_size - my)
-
-              
 
     # touche pour controler la camera
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_z]:
-        offset_y -= CAMERA_SPEED
+        offset_y -= camera.speed
     if keys[pygame.K_s]:
-        offset_y += CAMERA_SPEED
+        offset_y += camera.speed
     if keys[pygame.K_q]:
-        offset_x -= CAMERA_SPEED
+        offset_x -= camera.speed
     if keys[pygame.K_d]:
-        offset_x += CAMERA_SPEED
+        offset_x += camera.speed
 
     #Zoom avec le clavier
     if keys[pygame.K_g]:
@@ -265,10 +269,8 @@ while True:
 
 
     #limite de la caméra
-    max_offset_x = max(MAP_W * TILE_SIZE - SCREEN_W, 0)
-    max_offset_y = max(MAP_H * TILE_SIZE - SCREEN_H, 0)
-    offset_x = max(0, min(offset_x, max_offset_x))
-    offset_y = max(0, min(offset_y, max_offset_y))
+    camera.x = max(-MAP_W * TILE_SIZE, min(camera.x, MAP_W * TILE_SIZE))
+    camera.y = max(-MAP_H * TILE_SIZE, min(camera.y, MAP_H * TILE_SIZE))
 
     # draw
     screen.fill((0,0,0))

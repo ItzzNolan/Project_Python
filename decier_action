@@ -1,23 +1,7 @@
              
-
+"""
                 #liste des actions : 
-             """    move_to()
-                retreat_to()
 
-                intercept()
-                hold_position()
-                
-                attack_target()
-
-                attack_closest()
-
-
-
-                set_formation()
-                suicide_attack()
-
-                focus_fire()
- """
 
 
      def general.decider_actions(self,unites_alliees):
@@ -48,3 +32,4 @@
                 "unite": unite.id,
                 "params": unite.id,
             })
+"""
