@@ -383,6 +383,70 @@ class MajorDAFT(General):
 
         return orders
 
+class ColonelTURTLE(General):
+    """
+    IA defensive
+     - Formation compacte
+     - Pas de poursuite ou de chasse 
+     - Attaque seulement a portee
+     - Recul si HP faible
+    """
+
+    def __init__(self, id_player:int, safe_hp:int = 4, formation_radius:int = 2):
+        super().__init__("Colonel TURTLE", id_player)
+        self.safe_hp = safe_hp
+        self.formation_radius = formation_radius
+
+    #Centre(s) de formation(s)
+    def _formation_center(self, allies:List[UnitView]) -> Cord:
+        cx = sum(unit.pos[0] for unit in allies)//len(allies)
+        cy = sum(unit.pos[1] for unit in allies)//len(allies)
+        return (cx, cy)
+
+    def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
+        allies = [unit for unit in unit_ally if unit.is_alive]
+        orders:List[Action] = []
+
+        if not allies:
+            return orders
+        
+        center = self._formation_center(allies)
+
+        for unit in allies:
+            #Si les HPs de l'unit sont faibles...
+            if unit.hp <= self.safe_hp:
+                #...Recul simple -> on s'eloigne du centre 
+                dx = unit.pos[0] - center[0]
+                dy = unit.pos[1] - center[1]
+                retreat = (
+                    unit.pos[0]+(1 if dx>=0 else -1),
+                    unit.pos[1]+(1 if dy>=0 else -1)
+                )
+
+                if game.is_walkable(retreat):
+                    orders.append(self._order_move_to(unit, retreat))
+                    continue
+
+            #Attaques uniquement a portee
+            seen = game.enemy_in_los(unit)
+            in_range = [
+                enemy for enemy in seen if game.distance_tiles(unit.pos, enemy.pos) <= unit.range
+            ]
+
+            if in_range and unit.can_attack():
+                target = min(in_range, key = lambda enemy: enemy.hp)
+                orders.append(self._order_attack_focus(unit, target))
+                continue
+
+            #Maintenir la formation
+            dist_to_center = game.distance_tiles(unit.pos, center)
+            if dist_to_center > self.formation_radius:
+                orders.append(self._order_move_to(unit, center))
+            else:
+                orders.append(self._order_hold(unit))
+            
+        return orders
+    
 # ----------------------------
 #    Registre + MakeGeneral
 # ----------------------------
@@ -390,6 +454,7 @@ class MajorDAFT(General):
 GENERAL_REGISTRY = {
     "braindead" : CaptainBraindead,
     "daft" : MajorDAFT,
+    "turtle" : ColonelTURTLE,
 }
 
 """Cette fonction va creer un general en fonction d'une chaine de caracteres
@@ -762,15 +827,16 @@ if __name__ == "__main__":
 
     """On cree les generaux"""
     #MajorDAFT pour l'equipe 1 avec un point de regroupement proche
-    g1 = MajorDAFT(id_player=0, regroup_at=(2,2))
+    #g1 = MajorDAFT(id_player=0, regroup_at=(2,2))
+    g1 = CaptainBraindead(id_player=0)
 
     #CaptainBraindead pour l'equipe 2 pour voir la difference
-    g2 = CaptainBraindead(id_player=1)
+    g2 = ColonelTURTLE(id_player=1)
 
     generals = {0:g1, 1:g2}
 
     """Maintenant on simule N ticks et on affiche l'etat des unites"""
-    TICKS = 100
+    TICKS = 25
 
     for _ in range(TICKS):
         print_state(gv)
