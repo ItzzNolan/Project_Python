@@ -14,12 +14,12 @@ def scenario_MajorDAFT_vs_CaptainBraindead():
     general_joueur2 = CaptainBraindead(1)
 
     # 3. Ajouter les unités sur la carte
-    # --- MajorDAFT (joueur 1)
+    # --- MajorDAFT (joueur 1) BLEU
     for x in range(3):
         for y in range(10):
             jeu.ajouter_unite("Pikeman",x,y,0)  
 
-    # --- CaptainBraindead (joueur 2)
+    # --- CaptainBraindead (joueur 2) ROUGE
     for x in range(7, 10):
         for y in range(10):
             jeu.ajouter_unite("Pikeman",x,y,1)

@@ -139,7 +139,7 @@ class Jeu:
         afficher(self)
 
         # 2. LOGIQUE DU JEU : Chaque unité agit
-        for unite in self.unites:
+        for unite in list(self.unites):
             # Ignorer les unités mortes
             if not unite.alive:
                 continue
@@ -197,6 +197,12 @@ class Jeu:
 
         # 3. Nettoyer les unités mortes
         self.unites = [u for u in self.unites if u.alive]
+
+        # STOP immédiat si victoire
+        if self.est_termine():
+            return
+
+        # 4. Incrémenter le tour
         self._tour+=1
 
 
