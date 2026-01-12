@@ -5,6 +5,10 @@ from colorama import Fore, Back, Style
 
 from backend.carte import Carte
 
+debug_mode = False
+DEBUG = 1 if debug_mode else 0
+
+
 def afficher(jeu):
     """
     Affiche l'état complet du jeu en se basant sur l'objet Jeu réel.
@@ -66,4 +70,4 @@ def afficher(jeu):
         for unite in unites_vivantes:
             couleur = Fore.BLUE if unite.equipe == 0 else Fore.RED
             x, y = unite.coords
-            print(f"{couleur}{unite.Unit} (equipe {unite.equipe}) : {unite.HP} HP, position : {x:.1f}, {y:.1f}){Style.RESET_ALL}")
+            if DEBUG == 1:print(f"{couleur}{unite.Unit} (equipe {unite.equipe}) : {unite.HP} HP, position : {x:.1f}, {y:.1f}){Style.RESET_ALL}")
