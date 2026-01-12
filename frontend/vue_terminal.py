@@ -5,7 +5,7 @@ from colorama import Fore, Back, Style
 
 from backend.carte import Carte
 
-debug_mode = False
+debug_mode = True
 DEBUG = 1 if debug_mode else 0
 
 
