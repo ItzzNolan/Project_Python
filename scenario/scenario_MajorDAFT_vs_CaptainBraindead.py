@@ -4,7 +4,7 @@ from backend.jeu import Jeu
 from ia.general import CaptainBraindead, MajorDAFT
 from frontend.vue_terminal import afficher
 
-def scenario_piquiers_vs_chevaliers():  
+def scenario_MajorDAFT_vs_CaptainBraindead():  
 
     # 1. Créer le jeu et la carte
     jeu = Jeu(10, 10)
@@ -31,8 +31,6 @@ def scenario_piquiers_vs_chevaliers():
 
 if __name__ == "__main__":
     scenario_MajorDAFT_vs_CaptainBraindead()
-
-
-
+    
 
 
