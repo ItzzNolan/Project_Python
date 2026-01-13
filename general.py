@@ -12,8 +12,26 @@ import abc
 import math
 import random
 
+from datetime import datetime
+
 #Alias Tuple pour représenter une position sur la grille (x,y)
 Cord = Tuple[int,int]
+
+class SimLogger:
+    def __init__(self, filename:str = "simulation.log", echo:bool = True):
+        self.filename = filename
+        self.echo = echo
+        
+        with open(self.filename, "w", encoding="utf-8") as file:
+            file.write(f"--- Simulation started {datetime.now()} ---\n\n")
+    
+    def log(self, msg:str = ""):
+        if self.echo:
+            print(msg)
+        with open(self.filename, "a", encoding="utf-8") as file:
+            file.write(msg+"\n")    
+
+Logs = SimLogger("battle_sim.log") 
 
 # ----------------------------
 #         Protocoles
@@ -702,9 +720,12 @@ def check_victory(gameView:TestGameView) -> Optional[int]:
 
 def show_map(game:TestGameView):
     print("\n---MAP---")
+    Logs.log("\n---MAP---")
     for row in game.map_ascii():
         print(row)
+        Logs.log(row)
     print("")
+    Logs.log("")
 
 def tick_simulation(gameView:TestGameView, generals):
     """Execute un tick de simulation qui appele chaque general pour obtenir des ordres,
@@ -736,11 +757,14 @@ def tick_simulation(gameView:TestGameView, generals):
         orders = general.decider_actions(units_for_player, gameView)
 
         print(f"\n---Ordres donnes par {general.name} (Player {id_player})---")
+        Logs.log(f"\n---Ordres donnes par {general.name} (Player {id_player})---")
         if not orders:
             print("Aucuns ordres donnes")
+            Logs.log("Aucuns ordres donnes")
         for act in orders:
             all_orders[act.unit_id] = act
             print(f"\n---Unit{act.unit_id} -> {act.type.name}" + (f" vers {act.target_pos}" if act.target_pos else "") + (f" cible Unit{act.target_id}" if act.target_id else ""))
+            Logs.log(f"\n---Unit{act.unit_id} -> {act.type.name}" + (f" vers {act.target_pos}" if act.target_pos else "") + (f" cible Unit{act.target_id}" if act.target_id else ""))
     
     """On trie les ordres de mouvements (MOVE) et les ordres d'attaques (ATTACK)"""
     move_orders = {uid: act for uid, act in all_orders.items() if act.type == TypeAction.MOVE}
@@ -751,6 +775,7 @@ def tick_simulation(gameView:TestGameView, generals):
     reserved_next = set()
 
     print("\n---MOUVEMENTS---")
+    Logs.log("\n---MOUVEMENTS---")
 
     """Maintenant, on applique les mouvements (MOVE)"""
     for uid, mov in move_orders.items():
@@ -798,9 +823,11 @@ def tick_simulation(gameView:TestGameView, generals):
         unit.pos = move_to
         after = unit.pos #pos apres deplacement
         print(f"\n-> Unit{uid} se déplace de {before} à {after}")
+        Logs.log(f"\n-> Unit{uid} se déplace de {before} à {after}")
     
     
     print("\n---ATTAQUES---")
+    Logs.log("\n---ATTAQUES---")
     """Desormais, on applique les ordres d'attaques (ATTACK)"""
     for uid, att in attack_orders.items():
         attacker = id_to_unit.get(uid)
@@ -831,8 +858,12 @@ def tick_simulation(gameView:TestGameView, generals):
             print(f"\n-> Unit{uid} attaque Unit{target.id} ")
             print(f"pour {attacker.attack_damage} dégats ")
             print(f"(HP {before_hp} -> {target.hp})")
+            Logs.log(f"\n-> Unit{uid} attaque Unit{target.id} ")
+            Logs.log(f"pour {attacker.attack_damage} dégats ")
+            Logs.log(f"(HP {before_hp} -> {target.hp})")
         else:
             print(f"\n-> Unit{uid} voulait attaquer Unit{att.target_id} mais n'est pas en portee")
+            Logs.log(f"\n-> Unit{uid} voulait attaquer Unit{att.target_id} mais n'est pas en portee")
         
     """Auto attaque (si aucuns ordres est donne)"""
     for unit in gameView.units:
@@ -852,10 +883,13 @@ def tick_simulation(gameView:TestGameView, generals):
                 target.hp = 0
             print(f"-> (AUTO) Unit{unit.id} attaque Unit{target.id} ")
             print(f"(HP {before} -> {target.hp})")
+            Logs.log(f"-> (AUTO) Unit{unit.id} attaque Unit{target.id}")
+            Logs.log(f"(HP {before} -> {target.hp})")
 
     winner = check_victory(gameView)
     if winner:
         print(f"\nL'equipe {winner} a gagne")
+        Logs.log(f"\nL'equipe {winner} a gagne")
         return
 
     
@@ -863,8 +897,10 @@ def tick_simulation(gameView:TestGameView, generals):
     gameView.tick += 1
 
     print("\n---ETAT APRES TICK---")
+    Logs.log("\n---ETAT APRES TICK---")
     for unit in sorted(id_to_unit.values(), key=lambda x:(x.owner, x.id)):
         print(f"Unit{unit.id:02d} (Player{unit.owner}) pos={unit.pos} hp={unit.hp}")
+        Logs.log(f"Unit{unit.id:02d} (Player{unit.owner}) pos={unit.pos} hp={unit.hp}")
 
 def print_state(gameView:TestGameView) -> None:
     """Affiche l'etat des unites pour le debugging et les tests"""
@@ -872,11 +908,14 @@ def print_state(gameView:TestGameView) -> None:
         return f"U{unit.id:02d} (P{unit.owner}) {unit.unit_class:8} pos={unit.pos} hp={unit.hp:2d}"
     
     print(f"---- Tick {gameView.tick} ----")
+    Logs.log(f"---- Tick {gameView.tick} ----")
 
     for unit in sorted(gameView.units, key = lambda x:(x.owner, x.id)):
         print(unit_line(unit))
+        Logs.log(unit_line(unit))
     
     print("")
+    Logs.log("")
 
 
 if __name__ == "__main__":
@@ -911,15 +950,16 @@ if __name__ == "__main__":
     #MajorDAFT pour l'equipe 1 avec un point de regroupement proche
     g1 = MajorDAFT(id_player=0, regroup_at=(2,2))
     #g1 = CaptainBraindead(id_player=0)
+    #g1 = ColonelTURTLE(id_player=0)
 
     #CaptainBraindead pour l'equipe 2 pour voir la difference
-    #g2 = ColonelTURTLE(id_player=1)
-    g2 = MajorDAFT(id_player=1, regroup_at=(5,4))
+    g2 = ColonelTURTLE(id_player=1)
+    #g2 = MajorDAFT(id_player=1, regroup_at=(5,4))
 
     generals = {0:g1, 1:g2}
 
     """Maintenant on simule N ticks et on affiche l'etat des unites"""
-    TICKS = 20
+    TICKS = 200
 
     for _ in range(TICKS):
         print_state(gv)
