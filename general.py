@@ -236,13 +236,20 @@ class MajorDAFT(General):
     --> Evite la surexposition et respecte les cooldowns
     --> Supporte le regroupement des troupes
     --> Etendre LOS and plus proche chemin selection pour eviter mouvements repetes
+
+    IA offensive corrigee:
+    --> anti-stalemate
+    --> engagement force 
+    --> pression offensive progressive
     """
 
-    def __init__(self, id_player:int, regroup_at:Optional[Cord] = None, los_range:int = 12):
+    def __init__(self, id_player:int, regroup_at:Optional[Cord] = None, regroup_rad:int = 3):
         super().__init__("Major DAFT", id_player)
         #Position de regroupement avant d'attaquer
         self.regroup_at = regroup_at
-        self.los_range = los_range
+        self.regroup_rad = regroup_rad
+        self.no_fight_ticks = 0
+        self.force_attack_after = 6
 
     def _threat_score(self, enemy:UnitView) -> float:
         """Algorithme : Plus la valeur est elevee, plus la cible est prioritaire!
@@ -250,7 +257,7 @@ class MajorDAFT(General):
         On se contente juste des attributs hp/range
         """
         #Priorite selon les HP de l'ennemi et la portee de l'unite
-        score = (enemy.range*0.5) + ((10-enemy.hp)*0.3)
+        score = (enemy.range*0.6) + ((10-enemy.hp)*0.4)
         #Departager des scores identiques pour eviter une eventuelle casse
         score += random.random() * 0.01
         return score
@@ -321,26 +328,35 @@ class MajorDAFT(General):
         orders = []
         go_all = self._should_end_assault(game) #declencher l'assault final?
 
+        if not allies:
+            return orders
+
+        #Rassembler la liste des ennemis visibles globalement
+        seen_enemies = [e for e in game.all_seen_enemies(self.id_player) if e.owner!=self.id_player]
+
+        engaged = False
+
+        #Creer un ensemble de positions actuellement occupees (par des unites vivantes)
+        occupied = {unit.pos for unit in allies}
+
         """Si une position de regroupement est demandee et que les troupes ne se sont pas encore regroupes
         On ordonne un FORM_UP (regroup) qu'on simule par des MOVE(s) vers la position regroup_at
         """
-        if self.regroup_at is not None and allies:
+        if self.regroup_at is not None:
             #Il faut determiner si la majorite des unites sont a portee du regroupement
             dist_sum = sum(game.distance_tiles(unit.pos, self.regroup_at) for unit in allies)
             average_dist = (dist_sum / len(allies) if allies else 0)
 
             #Si l'unite est "loin" du point de regroupement et pas en assaut final alors on regroupe
             if average_dist > self.regroup_rad and not go_all:
-                for unit in allies:
-                    #On se deplace vers le point de regroupement
-                    orders.append(self._order_move_to(unit, self.regroup_at))
-                return orders #Priorite au regroupement
-            
-        #Rassembler la liste des ennemis visibles globalement
-        seen_enemies = [e for e in game.all_seen_enemies(self.id_player) if e.owner!=self.id_player]
-
-        #Creer un ensemble de positions actuellement occupees (par des unites vivantes)
-        occupied = {unit.pos for unit in (getattr(game, "unit_ally", []) or []) if getattr(unit, "is_alive", False)}
+                #Si pas encore engage, on regroupe
+                if not seen_enemies:
+                    for unit in allies:
+                        step = self._neighbour_step_towards(unit.pos, self.regroup_at, occupied-{unit.pos}, game)
+                        #On se deplace vers le point de regroupement
+                        orders.append(self._order_move_to(unit, step))
+                        occupied.add(step)
+                    return orders #Priorite au regroupement
 
         for unit in allies:
             """ #Ignorer les unites mortes par securite
@@ -348,15 +364,14 @@ class MajorDAFT(General):
                 continue """
 
             #Regarder les ennemis en LOS
-            visibles = [e for e in game.enemy_in_los(unit) if e.owner!=unit.owner]
+            visibles = [e for e in game.enemy_in_los(unit) if e.owner!=self.id_player]
             target = None
 
             if visibles:
                 #Choisir la cible la plus prioritaire selon _threat_score
-                target = max(visibles, key = lambda e:self._threat_score(e))
-            else:
-                #Pas de visible donc se rapprocher du plus proche ennemi connu
-                target = self._closest_enemies(unit, game)
+                target = max(visibles, key = self._threat_score)
+            elif seen_enemies:
+                target = min(seen_enemies, key = lambda e: game.distance_tiles(unit.pos, e.pos))
             
             #Pas de cible disponible
             if target is None:
@@ -370,16 +385,34 @@ class MajorDAFT(General):
             #Si la cible est dans la portee d'attaque et que l'unite est prete a attaquer alors elle attaque
             if dist <= unit.range and unit.can_attack():
                 orders.append(self._order_attack_focus(unit, target))
+                engaged = True
                 continue
 
-            #Calculer un seul pas vers la cible qui reduit la distance et evite les cases occupees
+            #Analyse locale : ennemis vs allies 
+            nearby_enemies = sum(1 for enemy in seen_enemies if game.distance_tiles(unit.pos, enemy.pos) <= 3)
+            nearby_allies = sum(1 for allie in allies if game.distance_tiles(unit.pos, allie.pos) <= 3)
+
+            #Recul si inferiorite locale
+            if nearby_enemies > nearby_allies+1:
+                orders.append(self._order_hold(unit))
+                continue
+
+            #Calculer un seul pas vers la cible qui reduit la distance et evite les cases occupees --> Avancer intelligemment
             step = self._neighbour_step_towards(unit.pos, target.pos, occupied-{unit.pos}, game)
 
             #Marquer le pas dans le jeu d'occupation pour eviter que deux units choisissent la meme case au meme tick
-            occupied.discard(unit.pos)
-            occupied.add(step)
-
             orders.append(self._order_move_to(unit, step))
+            occupied.add(step)
+        
+        #Anti-stalemate
+        if engaged:
+            self.no_fight_ticks = 0
+        else:
+            self.no_fight_ticks += 1
+
+        if self.no_fight_ticks >= self.force_attack_after:
+            #Abandon definitif du regroupement
+            self.regroup_at = None
 
         return orders
 
@@ -874,17 +907,17 @@ if __name__ == "__main__":
 
     """On cree les generaux"""
     #MajorDAFT pour l'equipe 1 avec un point de regroupement proche
-    #g1 = MajorDAFT(id_player=0, regroup_at=(2,2))
-    g1 = CaptainBraindead(id_player=0)
+    g1 = MajorDAFT(id_player=0, regroup_at=(2,2))
+    #g1 = CaptainBraindead(id_player=0)
 
     #CaptainBraindead pour l'equipe 2 pour voir la difference
-    g2 = ColonelTURTLE(id_player=1)
-    #g2 = MajorDAFT(id_player=1, regroup_at=(5,4))
+    #g2 = ColonelTURTLE(id_player=1)
+    g2 = MajorDAFT(id_player=1, regroup_at=(5,4))
 
     generals = {0:g1, 1:g2}
 
     """Maintenant on simule N ticks et on affiche l'etat des unites"""
-    TICKS = 100
+    TICKS = 20
 
     for _ in range(TICKS):
         print_state(gv)
