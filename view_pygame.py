@@ -12,7 +12,7 @@ class PygameView:
 
         pygame.init()
 
-        # --- PARAMETRES CONFIG ---
+        # parametre
 
         #taille des tuiles
         self.TILE_SIZE = 32
