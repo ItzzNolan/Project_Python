@@ -1,8 +1,11 @@
+# scenario/scenario_pygame.py
+
+import pygame
 from backend.carte import Carte
 from backend.Units import Unit  
 from backend.jeu import Jeu
 from ia.general import CaptainBraindead, MajorDAFT
-from frontend.vue_pygame import afficher
+from frontend.vue_pygame import VuePygame
 
 def scenario_MajorDAFT_vs_CaptainBraindead_pygame():  
 
@@ -24,11 +27,20 @@ def scenario_MajorDAFT_vs_CaptainBraindead_pygame():
         for y in range(10):
             jeu.ajouter_unite("Pikeman",x,y,1)
 
-    # 4. Lancer et retourner le jeu complet
-    while not jeu.est_termine():
-        afficher(jeu)
+    # 4. Lancer le jeu avec l'interface Pygame
+    vue = VuePygame(jeu)
+    clock = pygame.time.Clock()
+    running = True
+    while running and not jeu.est_termine():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        
         jeu.mettre_a_jour()
-    return jeu
+        vue.afficher(jeu)
+        clock.tick(30)  # Limiter à 30 FPS
+    pygame.quit()
+    
 
 if __name__ == "__main__":
     scenario_MajorDAFT_vs_CaptainBraindead_pygame()
