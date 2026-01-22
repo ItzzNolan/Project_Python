@@ -20,12 +20,12 @@ def scenario_MajorDAFT_vs_CaptainBraindead_pygame():
     # --- MajorDAFT (joueur 1) BLEU
     for x in range(3):
         for y in range(10):
-            jeu.ajouter_unite("Crossbowman",x,y,0)  
+            jeu.ajouter_unite("Knight",x,y,0)  
 
     # --- CaptainBraindead (joueur 2) ROUGE
     for x in range(7, 10):
         for y in range(10):
-            jeu.ajouter_unite("Crossbowman",x,y,1)
+            jeu.ajouter_unite("Knight",x,y,1)
 
     # 4. Lancer le jeu avec l'interface Pygame
     vue = VuePygame(10, 10)
