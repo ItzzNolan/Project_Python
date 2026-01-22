@@ -38,7 +38,7 @@ def scenario_MajorDAFT_vs_CaptainBraindead_pygame():
         
         jeu.mettre_a_jour()
         vue.afficher(jeu)
-        clock.tick(500)  # Limiter à 30 FPS
+        clock.tick(3)  # Limiter à 30 FPS
     pygame.quit()
 
 
