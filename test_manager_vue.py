@@ -1,14 +1,23 @@
 # main.py
-# Version qui utilise ManagerVue
+# Version avec ManagerVue et support des generaux IA
 
 import pygame
 from backend.jeu import Jeu
 from backend.save_manager import SaveManager
 from frontend.manager_vue import ManagerVue
 
+# --- GENERAUX DISPONIBLES ---
+# "braindead" : CaptainBraindead (basique, chasse et attaque)
+# "daft"      : MajorDAFT (plus intelligent, focus prioritaire)
 
-def initialiser_partie():
-    partie = Jeu()
+GENERAL_BLEU = "daft"       # Modifier ici
+GENERAL_ROUGE = "braindead"  # Modifier ici
+
+
+def initialiser_partie(general_bleu="braindead", general_rouge="braindead"):
+    """Cree une nouvelle partie avec les generaux specifies"""
+    partie = Jeu(general_bleu=general_bleu, general_rouge=general_rouge)
+    
     # Equipe bleue
     partie.ajouter_unite("Knight", 5, 6, equipe=0)
     partie.ajouter_unite("Knight", 6, 7, equipe=0)
@@ -29,7 +38,7 @@ def initialiser_partie():
 
 if __name__ == "__main__":
     # --- INITIALISATION ---
-    mon_jeu = initialiser_partie()
+    mon_jeu = initialiser_partie(GENERAL_BLEU, GENERAL_ROUGE)
     manager_vue = ManagerVue(mon_jeu)
     save_manager = SaveManager()
     
@@ -41,7 +50,12 @@ if __name__ == "__main__":
     partie_terminee = False
     gagnant = None
 
-    print("\n" + "="*55)
+    print("\n" + "="*60)
+    print("  MedievAIl BAIttle GenerAIl")
+    print("="*60)
+    print(f"  General Bleu:  {mon_jeu.generaux[0].name}")
+    print(f"  General Rouge: {mon_jeu.generaux[1].name}")
+    print("-"*60)
     print("  CONTROLES:")
     print("  P             = Pause/Play")
     print("  F9            = Changer vue (Pygame/Terminal)")
@@ -53,7 +67,7 @@ if __name__ == "__main__":
     print("  Shift         = Deplacement rapide")
     print("  R             = Recommencer")
     print("  ESC           = Quitter")
-    print("="*55 + "\n")
+    print("="*60 + "\n")
 
     # --- BOUCLE PRINCIPALE ---
     while running:
@@ -99,12 +113,12 @@ if __name__ == "__main__":
                 if event.key == pygame.K_TAB:
                     paused = True
                     manager_vue.vue_pygame.paused = True
-                    mon_jeu.ouvrir_stats_html()
+                    save_manager.ouvrir_stats_html(mon_jeu)
                     print("Stats HTML ouvertes")
                 
                 # R = Restart
                 if event.key == pygame.K_r:
-                    mon_jeu = initialiser_partie()
+                    mon_jeu = initialiser_partie(GENERAL_BLEU, GENERAL_ROUGE)
                     manager_vue.jeu = mon_jeu
                     partie_terminee = False
                     gagnant = None
@@ -130,11 +144,11 @@ if __name__ == "__main__":
                 if len(bleus) == 0 and len(rouges) > 0:
                     partie_terminee = True
                     gagnant = "ROUGE"
-                    print("VICTOIRE ROUGE!")
+                    print(f"VICTOIRE {mon_jeu.generaux[1].name}!")
                 elif len(rouges) == 0 and len(bleus) > 0:
                     partie_terminee = True
                     gagnant = "BLEU"
-                    print("VICTOIRE BLEUE!")
+                    print(f"VICTOIRE {mon_jeu.generaux[0].name}!")
                 elif len(bleus) == 0 and len(rouges) == 0:
                     partie_terminee = True
                     gagnant = "EGALITE"
