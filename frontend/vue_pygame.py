@@ -1,5 +1,3 @@
-# frontend/vue_pygame.py
-
 import pygame
 import random
 import os
@@ -10,70 +8,66 @@ from assets.loader import load_sprite
 class VuePygame:
     def __init__(self, largeur_carte, hauteur_carte):
         pygame.init()
-        
-        # Dimensions ecran
+
         self.SCREEN_WIDTH = 1100
         self.SCREEN_HEIGHT = 750
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption("MedievAIl BAIttle GenerAIl")
         
-        # Dimensions carte
+
         self.largeur_carte = largeur_carte
         self.hauteur_carte = hauteur_carte
         
-        # Types de tiles
+
         self.TILE_GRASS = 0
         self.TILE_TREE = 1
         self.TILE_GOLD = 2
         
-        # Camera
+
         self.camera_x = 0
         self.camera_y = 0
         self.speed = 20
         self.speed_fast = 50
         
-        # Etat
+
         self.paused = False
         self.fullscreen = False
         
-        # Chargement des sprites
         self._charger_sprites()
         
-        # Generation de la carte
+
         self._generer_carte()
         
-        # Pre-rendu de la carte
+
         self._pre_rendre_carte()
         
-        # Minimap
+
         self._creer_minimap()
         
-        # Fonts
+
         self.font_hud = pygame.font.SysFont("Segoe UI", 18, bold=True)
         self.font_mono = pygame.font.SysFont("Consolas", 15)
 
     def _charger_sprites(self):
-        """Charge tous les sprites necessaires."""
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
         try:
-            # Tiles
+ 
             self.grass_sprite = load_sprite(os.path.join(base_dir, "assets/tile_grass.png"), upscale_factor=1).convert_alpha()
             self.tree_sprite = load_sprite(os.path.join(base_dir, "assets/tile_tree.png"), upscale_factor=1).convert_alpha()
             self.gold_sprite = load_sprite(os.path.join(base_dir, "assets/tile_gold.png"), upscale_factor=1).convert_alpha()
             
-            # Redimensionner arbres et or
             self.tree_sprite = pygame.transform.smoothscale(self.tree_sprite, 
                 (int(self.tree_sprite.get_width() * 0.5), int(self.tree_sprite.get_height() * 0.5)))
             self.gold_sprite = pygame.transform.smoothscale(self.gold_sprite, 
                 (int(self.gold_sprite.get_width() * 0.7), int(self.gold_sprite.get_height() * 0.7)))
             
-            # Unites
+
             crossbow_sprite = load_sprite(os.path.join(base_dir, "assets/Crossbowman.png"), upscale_factor=1).convert_alpha()
             knight_sprite = load_sprite(os.path.join(base_dir, "assets/Knight.png"), upscale_factor=1).convert_alpha()
             pikeman_sprite = load_sprite(os.path.join(base_dir, "assets/Pikeman.png"), upscale_factor=1).convert_alpha()
             
-            # Redimensionner unites
+
             self.unit_sprites = {
                 "Crossbowman": pygame.transform.smoothscale(crossbow_sprite, 
                     (int(crossbow_sprite.get_width() * 1.3), int(crossbow_sprite.get_height() * 1.3))),
@@ -83,13 +77,11 @@ class VuePygame:
                     (int(pikeman_sprite.get_width() * 1.3), int(pikeman_sprite.get_height() * 1.3)))
             }
             
-            # Dimensions tiles
             self.TILE_W = self.grass_sprite.get_width()
             self.TILE_H = self.grass_sprite.get_height()
             
         except Exception as e:
             print(f"ERREUR chargement sprites: {e}")
-            # Fallback
             self.TILE_W = 64
             self.TILE_H = 32
             self.grass_sprite = None
@@ -98,7 +90,6 @@ class VuePygame:
             self.unit_sprites = {}
 
     def _generer_carte(self):
-        """Genere une carte aleatoire avec arbres et or."""
         self.world_map = [[self.TILE_GRASS for _ in range(self.largeur_carte)] for _ in range(self.hauteur_carte)]
         
         for y in range(self.hauteur_carte):
@@ -110,7 +101,6 @@ class VuePygame:
                     self.world_map[y][x] = self.TILE_GOLD
 
     def _pre_rendre_carte(self):
-        """Pre-rend la carte dans une surface pour optimiser."""
         self.surface_w = self.largeur_carte * self.TILE_W + self.TILE_W
         self.surface_h = self.hauteur_carte * self.TILE_H + self.TILE_H
         
@@ -127,11 +117,7 @@ class VuePygame:
                 iso_x, iso_y = grid_to_iso(gx, gy, self.TILE_W, self.TILE_H)
                 draw_x = self.origin_x + iso_x - self.TILE_W // 2
                 draw_y = self.origin_y + iso_y
-                
-                # Herbe
                 self.map_surface.blit(self.grass_sprite, (draw_x, draw_y))
-                
-                # Arbres / Or
                 tile = self.world_map[gy][gx]
                 if tile == self.TILE_TREE and self.tree_sprite:
                     self.map_surface.blit(self.tree_sprite, 
@@ -142,12 +128,10 @@ class VuePygame:
                         (draw_x + self.TILE_W // 2 - self.gold_sprite.get_width() // 2,
                          draw_y + self.TILE_H - self.gold_sprite.get_height()))
         
-        # Initialiser camera au centre
         self.camera_x = -self.surface_w // 2 + self.SCREEN_WIDTH // 2
         self.camera_y = -self.surface_h // 4
 
     def _creer_minimap(self):
-        """Cree la minimap de base."""
         self.MINIMAP_SIZE = 120
         self.minimap_scale = self.MINIMAP_SIZE / self.largeur_carte
         
@@ -169,26 +153,16 @@ class VuePygame:
                     (px, py, max(1, int(self.minimap_scale)), max(1, int(self.minimap_scale))))
 
     def afficher(self, jeu):
-        """Methode principale d'affichage."""
         current_w, current_h = self.screen.get_size()
         
-        # Fond
+
         self.screen.fill((121, 127, 58))
-        
-        # Carte pre-rendue
         self.screen.blit(self.map_surface, (self.camera_x, self.camera_y))
-        
-        # Unites
         self._dessiner_unites(jeu)
-        
-        # Minimap
         self._dessiner_minimap(jeu, current_w, current_h)
-        
-        # HUD
         self._dessiner_hud(jeu, current_w)
 
     def _dessiner_unites(self, jeu):
-        """Dessine toutes les unites."""
         for u in jeu.unites:
             if not u.alive or not u.coords:
                 continue
@@ -197,26 +171,19 @@ class VuePygame:
             iso_x, iso_y = grid_to_iso(ux, uy, self.TILE_W, self.TILE_H)
             dx = self.camera_x + self.origin_x + iso_x
             dy = self.camera_y + self.origin_y + iso_y + self.TILE_H // 2
-            
-            # Cercle equipe
             color = (70, 130, 255) if u.equipe == 0 else (255, 70, 70)
             pygame.draw.ellipse(self.screen, color, (dx - 18, dy - 8, 36, 16), 2)
-            
-            # Sprite
             sprite = self.unit_sprites.get(u.Unit)
             if sprite:
                 sx = dx - sprite.get_width() // 2
                 sy = dy - sprite.get_height() + 8
                 self.screen.blit(sprite, (sx, sy))
-                
-                # Barre de vie
                 hp_ratio = max(0, min(1, u.HP / 35))
                 pygame.draw.rect(self.screen, (40, 40, 40), (dx - 18, sy - 8, 36, 5))
                 hp_color = (50, 220, 50) if hp_ratio > 0.3 else (255, 100, 50)
                 pygame.draw.rect(self.screen, hp_color, (dx - 18, sy - 8, int(36 * hp_ratio), 5))
 
     def _dessiner_minimap(self, jeu, current_w, current_h):
-        """Dessine la minimap avec les unites."""
         minimap = self.minimap_base.copy()
         
         for u in jeu.unites:
@@ -232,7 +199,6 @@ class VuePygame:
         self.screen.blit(minimap, (mm_x, mm_y))
 
     def _dessiner_hud(self, jeu, current_w):
-        """Dessine le HUD en haut."""
         pygame.draw.rect(self.screen, (15, 20, 28), (0, 0, current_w, 50))
         pygame.draw.line(self.screen, (50, 55, 65), (0, 49), (current_w, 49), 2)
         
@@ -249,11 +215,8 @@ class VuePygame:
         self.screen.blit(shortcuts, (current_w - shortcuts.get_width() - 15, 16))
 
     def gerer_camera(self, keys):
-        """Gere le deplacement de la camera."""
         current_w, current_h = self.screen.get_size()
         current_speed = self.speed_fast if (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]) else self.speed
-        
-        # ZQSD + Fleches
         if keys[pygame.K_LEFT] or keys[pygame.K_q]:
             self.camera_x += current_speed
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
@@ -262,8 +225,6 @@ class VuePygame:
             self.camera_y += current_speed
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.camera_y -= current_speed
-        
-        # Limites
         cam_x_min = -self.surface_w + current_w
         cam_x_max = 0
         cam_y_min = -self.surface_h + current_h
