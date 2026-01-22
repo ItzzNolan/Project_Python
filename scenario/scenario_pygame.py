@@ -28,7 +28,7 @@ def scenario_MajorDAFT_vs_CaptainBraindead_pygame():
             jeu.ajouter_unite("Pikeman",x,y,1)
 
     # 4. Lancer le jeu avec l'interface Pygame
-    vue = VuePygame(jeu)
+    vue = VuePygame(10, 10)
     clock = pygame.time.Clock()
     running = True
     while running and not jeu.est_termine():
@@ -40,7 +40,7 @@ def scenario_MajorDAFT_vs_CaptainBraindead_pygame():
         vue.afficher(jeu)
         clock.tick(30)  # Limiter à 30 FPS
     pygame.quit()
-    
+
 
 if __name__ == "__main__":
     scenario_MajorDAFT_vs_CaptainBraindead_pygame()
