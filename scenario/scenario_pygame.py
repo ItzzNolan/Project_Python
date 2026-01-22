@@ -26,6 +26,7 @@ def scenario_MajorDAFT_vs_CaptainBraindead_pygame():
 
     # 4. Lancer et retourner le jeu complet
     while not jeu.est_termine():
+        afficher(jeu)
         jeu.mettre_a_jour()
     return jeu
 
