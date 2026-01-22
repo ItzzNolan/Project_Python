@@ -18,12 +18,12 @@ def scenario_MajorDAFT_vs_CaptainBraindead_pygame():
 
     # 3. Ajouter les unités sur la carte
     # --- MajorDAFT (joueur 1) BLEU
-    for x in range(1):
+    for x in range(3):
         for y in range(10):
             jeu.ajouter_unite("Crossbowman",x,y,0)  
 
     # --- CaptainBraindead (joueur 2) ROUGE
-    for x in range(9, 10):
+    for x in range(7, 10):
         for y in range(10):
             jeu.ajouter_unite("Crossbowman",x,y,1)
 
