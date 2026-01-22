@@ -1,4 +1,3 @@
-# backend/save_manager.py
 
 import json
 import os
@@ -7,8 +6,6 @@ from datetime import datetime
 
 
 class SaveManager:
-    """Gestionnaire de sauvegardes et exports pour le jeu"""
-    
     SAVE_DIR = "saves"
     QUICKSAVE_FILE = "quicksave.json"
     HTML_FILE = "game_state.html"
@@ -20,10 +17,8 @@ class SaveManager:
     def _get_path(self, filename):
         return os.path.join(self.SAVE_DIR, filename)
     
-    # ==================== SAVE / LOAD ====================
     
     def sauvegarder(self, jeu, filename=None):
-        """Sauvegarde l'etat du jeu dans un fichier JSON"""
         if filename is None:
             filename = self.QUICKSAVE_FILE
         
@@ -68,7 +63,6 @@ class SaveManager:
             return False
     
     def charger(self, jeu, filename=None):
-        """Charge l'etat du jeu depuis un fichier JSON"""
         from backend.carte import Carte
         from backend.Units import Unit
         
@@ -109,20 +103,16 @@ class SaveManager:
             return False
     
     def quicksave_existe(self):
-        """Verifie si un quicksave existe"""
         return os.path.exists(self._get_path(self.QUICKSAVE_FILE))
     
-    # ==================== HTML EXPORT ====================
     
     def generer_html_stats(self, jeu, filepath=None):
-        """Genere une page HTML avec les stats de toutes les unites"""
         if filepath is None:
             filepath = self.HTML_FILE
         
         bleus = [u for u in jeu.unites if u.alive and u.equipe == 0]
         rouges = [u for u in jeu.unites if u.alive and u.equipe == 1]
         
-        # Noms des generaux
         nom_general_bleu = jeu.generaux[0].name if 0 in jeu.generaux else "Inconnu"
         nom_general_rouge = jeu.generaux[1].name if 1 in jeu.generaux else "Inconnu"
         
@@ -198,7 +188,6 @@ class SaveManager:
             return None
     
     def ouvrir_stats_html(self, jeu):
-        """Genere et ouvre la page HTML des stats dans le navigateur"""
         filepath = self.generer_html_stats(jeu)
         if filepath:
             webbrowser.open('file://' + os.path.abspath(filepath))
