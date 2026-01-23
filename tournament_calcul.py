@@ -5,7 +5,7 @@ class Tournament:
         self.generals = generals_names
         self.scenarios = scenarios
         # On stocke les résultats sous forme de matrice
-        self.matrix = {s: {g1: {g2: [0, 0] for g2 in generals_names} 
+        self.matrix = {s: {str(g1): {str(g2): [0, 0] for g2 in generals_names} 
                        for g1 in generals_names} for s in scenarios}
 
     def enregistrer_resultat(self, scenario, ia_a, ia_b, vainqueur):
@@ -94,3 +94,4 @@ class Tournament:
         with open(filename, "w", encoding="utf-8") as f:
             f.write(html)
         print(f"Rapport HTML généré : {filename}")
+
