@@ -29,7 +29,7 @@ class Unit():
         self.id=None
         self.equipe = None
         self.coords = None
-        self.hitbox=0.1
+        self.hitbox=0.25
         self.target = None
         self.alive = True
         self.timer=0
