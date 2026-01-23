@@ -62,14 +62,14 @@ def initialiser(generaux:list, list_unite:dict):
 
 
 def tournoi(generaux:list, list_unite:dict,nb_combat=100):
-    # tournament=Tournament(generaux,[list_unite])
+    tournament=Tournament(generaux,{"sc1":list_unite})
     unites=list_unite
     partie=initialiser(generaux, list_unite)
     vainqueur=""
-    for g1 in generaux:
-        partie.generaux[0]=make_general(f"{g1}",0)
-        for g2 in generaux:
-            partie.generaux[1]=make_general(f"{g2}",1)
+    for i in range(len(generaux)):
+        partie.generaux[0]=make_general(f"{generaux[i]}",0)
+        for j in range(i,len(generaux)):
+            partie.generaux[1]=make_general(f"{generaux[j]}",1)
             print(f"combat :{partie.generaux[0]} vs {partie.generaux[1]}")
             print(f"nb unite : {len(partie.unites)}")
             for i in range(nb_combat):
@@ -81,15 +81,17 @@ def tournoi(generaux:list, list_unite:dict,nb_combat=100):
                     # print(f"tour: {partie._tour} , unite:{len(partie.unites)}")
                 if partie.check_victory()==1:
                     vainqueur=partie.generaux[0].name
-                    print(f"vainqueur: {partie.generaux[0].name}1 avec {len(partie.unites)} unites")
+                    print(f"vainqueur: {partie.generaux[0].name} avec {len(partie.unites)} unites")
                 elif partie.check_victory()==2:
                     vainqueur=partie.generaux[1].name
-                    print(f"vainqueur: {partie.generaux[1].name}2 avec {len(partie.unites)} unites")
-                print([u.equipe for u in partie.unites])
-                # tournament.enregistrer_resultat(partie.generaux[0].name,partie.generaux[1].name,vainqueur)
+                    print(f"vainqueur: {partie.generaux[1].name} avec {len(partie.unites)} unites")
+                elif partie.check_victory()==3:
+                    vainqueur="egalite"
+                    print(f"vainqueur: aucun, egalite")
+                tournament.enregistrer_resultat("sc1",partie.generaux[0].name.lower(),partie.generaux[1].name.lower(),vainqueur)
                 partie = end_fight([g.name for g in partie.generaux.values()], list_unite)
-    # tournament.generer_rapport_html()
+    tournament.generer_rapport_html()
 
 
 if __name__ == "__main__":
-    tournoi(["braindead"],{"Pikeman":20, "Knight":20, "Crossbowman":20})
+    tournoi(["captain braindead","major daft"],{"Pikeman":20, "Knight":20, "Crossbowman":20}, 10)
