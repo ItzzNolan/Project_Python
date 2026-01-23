@@ -7,7 +7,6 @@ class Tournament:
         self.scenarios = scenarios
         self.results = {s: {g: 0 for g in generals_names} for s in scenarios}
         
-        # Listes pour le graphique (Correction de l'erreur)
         self.history_army0 = []
         self.history_army1 = []
 
@@ -45,4 +44,5 @@ class Tournament:
         html += f"</table><h2>Graphique de la bataille</h2><img src='Evolution_Population.png'></body></html>"
         with open(filename, "w", encoding="utf-8") as f:
             f.write(html)
+
         print(f"Rapport HTML généré : {filename}")
