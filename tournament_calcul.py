@@ -23,6 +23,7 @@ class Tournament:
                 self.matrix[scenario][ia_a][ia_b][0] += 1
             elif vainqueur == ia_b:
                 self.matrix[scenario][ia_b][ia_a][0] += 1
+            else pass
 
     def generer_rapport_html(self, filename="rapport_final.html"):
         """Génère le rapport avec Score Global et Matrice"""
@@ -93,5 +94,6 @@ class Tournament:
         with open(filename, "w", encoding="utf-8") as f:
             f.write(html)
         print(f"Rapport HTML généré : {filename}")
+
 
 
