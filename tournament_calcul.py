@@ -33,7 +33,6 @@ class Tournament:
         for s in self.scenarios:
             for g1 in self.generals:
                 for g2 in self.generals:
-                    if g1 != g2:
                         global_scores[g1][0] += self.matrix[s][g1][g2][0]
                         global_scores[g1][1] += self.matrix[s][g1][g2][1]
 
@@ -94,4 +93,5 @@ class Tournament:
         with open(filename, "w", encoding="utf-8") as f:
             f.write(html)
         print(f"Rapport HTML généré : {filename}")
+
 
