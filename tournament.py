@@ -10,8 +10,7 @@ class Tournament:
         self.history_army0 = []
         self.history_army1 = []
 
-    def enregistrer_evolution(self, pop0, pop1):
-        """Cette méthode manquait dans ton code !"""
+    def enregistrer_evolution(self, pop0, pop1): 
         self.history_army0.append(pop0)
         self.history_army1.append(pop1)
 
@@ -46,3 +45,4 @@ class Tournament:
             f.write(html)
 
         print(f"Rapport HTML généré : {filename}")
+
