@@ -436,115 +436,98 @@ class MajorDAFT(General):
 
 class ColonelTURTLE(General):
     """
-    IA defensive
+    IA defensive/agressive++
      - Formation compacte
-     - Pas de poursuite ou de chasse 
-     - Avance defensive lente et optimiste
+     - Push coordonne 
+     - Avance lente et optimiste
      - Recul si HP faible
+     - Melees devant et archers derriere
     """
 
-    def __init__(self, id_player:int, safe_hp:int = 3, defensive_anchor:Optional[Cord] = None, patience_ticks:int = 10):
-        super().__init__("Colonel TURTLE", id_player)
-        self.safe_hp = safe_hp
-        self.defensive_anchor = defensive_anchor
-        self.patience_ticks = patience_ticks
-        self.no_threat_ticks = 0
+    def __init__(self, id_player:int, form_rad:int = 2, local_rad:int = 3, low_hp:int = 3, force_push_after:int = 5):
+        super().__init__("Colonel TURTLE", id_player, regroup_rad=form_rad)
+        self.form_rad = form_rad
+        self.local_rad = local_rad
+        self.low_hp = low_hp
+        self.force_push_after = force_push_after
+        self.no_engage_ticks = 0
     
-    def _is_ranged(self, unit:UnitView) -> bool:
-        return unit.range > 1
+    def _center(self, units:List[UnitView]) -> Cord:
+        x = sum(unit.pos[0] for unit in units)//len(units)
+        y = sum(unit.pos[1] for unit in units)//len(units)
     
-    def _is_low_hp(self, unit:UnitView) -> bool:
-        return unit.hp <= self.safe_hp
+        return (x, y)
 
-    def _nearest_enemy(self, unit:UnitView, game:GameView) -> Optional[UnitView]:
-        enemies = game.enemy_in_los(unit)
-        if not enemies:
-            return None
-        return min(enemies, key = lambda e: game.distance_tiles(unit.pos, e.pos))
-    
-    def _local_counts(self, unit:UnitView, allies:List[UnitView], enemies:List[UnitView], game:GameView, radius:int = 3) -> tuple[int, int]:
-        allies_count = sum(1 for a in allies if game.distance_tiles(unit.pos, a.pos) <= radius)
-        enemies_count = sum(1 for e in enemies if game.distance_tiles(unit.pos, e.pos) <= radius)
-        
-        return allies_count, enemies_count
-    
-    def _retreat_step(self, unit:UnitView, enemy:UnitView, game:GameView) -> Cord:
-        ux, uy = unit.pos
-        ex, ey = enemy.pos
-
-        dx = ux - ex
-        dy = uy - ey
-
-        if abs(dx)>=abs(dy):
-            return (ux+(1 if dx>=0 else -1), uy)
-        else:
-            return (ux, uy+(1 if dy>=0 else -1))
-        
-    def _towards_step(self, unit:UnitView, target:Cord, game:GameView) -> Cord:
-        ux, uy = unit.pos
-        tx, ty = target
-
-        if abs(tx-ux)>=abs(ty-uy):
-            return (ux+(1 if tx>ux else -1), uy)
-        else:
-            return (ux, uy+(1 if ty>uy else -1))
+    def _local_counts(self, pos:Cord, units:List[UnitView], game:GameView) -> int:
+        return sum(1 for unit in units if game.distance_tiles(pos, unit.pos) <= self.local_rad)
         
     def decider_actions(self, unit_ally:Iterable[UnitView], game:GameView) -> List[Action]:
         allies = [unit for unit in unit_ally if unit.is_alive]
-        enemies = game.all_seen_enemies(self.id_player)
         orders:List[Action] = []
-
-        threat_detected = False
 
         if not allies:
             return orders
+        
+        enemies = game.all_seen_enemies(self.id_player)
+        if not enemies:
+            return [self._order_hold(unit) for unit in allies]
 
+        center = self._center(allies)
+        occupied = {unit.pos for unit in allies}
+
+        #Cible commune
+        primary_target = min(enemies, key = lambda e:game.distance_tiles(center, e.pos))
+
+        #Etat d'engagement de l'equipe
+        any_in_range = any(game.distance_tiles(unit.pos, primary_target.pos) <= unit.range for unit in allies)
+
+        if any_in_range:
+            self.no_engage_ticks = 0
+        else:
+            self.no_engage_ticks += 1
+
+        force_push = self.no_engage_ticks >= self.force_push_after
+        
+        #Decisions
         for unit in allies:
-            nearest_enemy = self._nearest_enemy(unit, game)
+            dist = game.distance_tiles(unit.pos, primary_target.pos)
+
             #Si les HPs de l'unit sont faibles...
-            if self._is_low_hp(unit) and nearest_enemy:
+            if unit.hp <= self.low_hp:
                 #...Recul simple -> on s'eloigne du centre 
-                retreat = self._retreat_step(unit, nearest_enemy, game)
-                orders.append(self._order_move_to(unit, retreat))
-                continue
-
-            #Analyse locale
-            if nearest_enemy:
-                threat_detected = True
-                allies_n, enemies_n = self._local_counts(unit, allies, enemies, game)
-
-                #Enemi isole = Aucun autre ennemi proche
-                isolated_enemy = enemies_n == 1
-
-                #Attaque opportuniste
-                if unit.can_attack() and (isolated_enemy or (allies_n>=enemies_n)):
-                    dist = game.distance_tiles(unit.pos, nearest_enemy.pos)
-                    if dist<=unit.range:
-                        orders.append(self._order_attack_focus(unit, nearest_enemy))
-                        continue
-
-            if self.defensive_anchor:
-                #Melees devant
-                if not self._is_ranged(unit):
-                    step = self._towards_step(unit, self.defensive_anchor, game)
-                    orders.append(self._order_move_to(unit, step))
-                else:
-                    #Archers restent derriere
-                    orders.append(self._order_hold(unit))
+                step = MajorDAFT._neighbour_step_towards(self, unit.pos, center, occupied-{unit.pos}, game)
+                orders.append(self._order_move_to(unit, step))
+                occupied.add(step)
                 continue
             
-            """Avance defensive lente et optimiste"""
-            if not nearest_enemy:
-                self.no_threat_ticks += 1
-                if self.no_threat_ticks>=self.patience_ticks:
-                    step = self._towards_step(unit, unit.pos, game)
-                    orders.append(self._order_move_to(unit, step))
-                else:
-                    orders.append(self._order_hold(unit))
+            #Attaque directe
+            if dist <= unit.range and unit.can_attack():
+                orders.append(self._order_attack_focus(unit, primary_target))
+                continue
+
+            #Analyse avantage locale
+            allies_local = self._local_counts(unit.pos, allies, game)
+            enemies_local = self._local_counts(unit.pos, enemies, game)
+
+            is_advantaged = allies_local >= enemies_local
+
+            #Push coordonne
+            if is_advantaged or force_push:
+                step = MajorDAFT._neighbour_step_towards(self, unit.pos, primary_target.pos, occupied-{unit.pos}, game)
+                orders.append(self._order_move_to(unit, step))
+                occupied.add(step)
+                continue
+
+            #Maintien de la formation
+            form_up = 1 if unit.unit_class != "Archer" else 2
+
+            if game.distance_tiles(unit.pos, center) > form_up:
+                step = MajorDAFT._neighbour_step_towards(self, unit.pos, center, occupied-{unit.pos}, game)
+                orders.append(self._order_move_to(unit, step))
+                occupied.add(step)
             else:
-                self.no_threat_ticks = 0
                 orders.append(self._order_hold(unit))
-            
+        
         return orders
     
 # ----------------------------
@@ -948,18 +931,19 @@ if __name__ == "__main__":
 
     """On cree les generaux"""
     #MajorDAFT pour l'equipe 1 avec un point de regroupement proche
-    g1 = MajorDAFT(id_player=0, regroup_at=(2,2))
+    #g1 = MajorDAFT(id_player=0, regroup_at=(2,2))
     #g1 = CaptainBraindead(id_player=0)
-    #g1 = ColonelTURTLE(id_player=0)
+    g1 = ColonelTURTLE(id_player=0)
 
     #CaptainBraindead pour l'equipe 2 pour voir la difference
     g2 = ColonelTURTLE(id_player=1)
     #g2 = MajorDAFT(id_player=1, regroup_at=(5,4))
+    #g2 = CaptainBraindead(id_player=1)
 
     generals = {0:g1, 1:g2}
 
     """Maintenant on simule N ticks et on affiche l'etat des unites"""
-    TICKS = 200
+    TICKS = 250
 
     for _ in range(TICKS):
         print_state(gv)
