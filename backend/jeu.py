@@ -1,4 +1,5 @@
 import math
+import random
 from typing import List, Optional, Dict
 from backend.carte import Carte
 from backend.Units import Unit
@@ -16,6 +17,7 @@ class Jeu:
         
         print(f"[JEU] General Bleu: {self.generaux[0].name}")
         print(f"[JEU] General Rouge: {self.generaux[1].name}")
+
     @property
     def tick(self) -> int:
         return self._tour
@@ -47,6 +49,9 @@ class Jeu:
     def all_seen_enemies(self, id_player: int) -> List:
         return [u for u in self.unites if u.alive and u.equipe != id_player and u.coords]
     
+    def all_seen_allies(self, id_player: int) -> List:
+        return [u for u in self.unites if u.alive and u.equipe == id_player and u.coords]
+    
     def distance_tiles(self, pos1, pos2) -> int:
         if pos1 is None or pos2 is None:
             return 999
@@ -67,6 +72,7 @@ class Jeu:
             if 0 <= x < self.carte.largeur and 0 <= y < self.carte.hauteur:
                 grid[y][x] = str(unit.equipe)
         return ["".join(row) for row in grid]
+
     def ajouter_unite(self, nom_unite: str, x: int, y: int, equipe: int = 0):
         if self.carte.est_dans_grille(x, y):
             nouvelle_unite = Unit(nomUnite=nom_unite)
@@ -81,6 +87,7 @@ class Jeu:
             if u.id == unit_id:
                 return u
         return None
+
     def _executer_move(self, unit: Unit, target_pos):
         if unit.coords is None or target_pos is None:
             return
@@ -148,6 +155,7 @@ class Jeu:
         elif action.type == TypeAction.FORM_UP:
             if action.target_pos:
                 self._executer_move(unit, action.target_pos)
+
     def mettre_a_jour(self):
         self._tour += 1
         
@@ -157,7 +165,10 @@ class Jeu:
         
         all_actions: List[Action] = []
         
-        for equipe, general in self.generaux.items():
+        equipes = list(self.generaux.items())
+        random.shuffle(equipes)
+        
+        for equipe, general in equipes:
             unites_equipe = [u for u in self.unites if u.alive and u.equipe == equipe and u.coords]
             
             if not unites_equipe:
@@ -168,16 +179,31 @@ class Jeu:
                 all_actions.extend(actions)
             except Exception as e:
                 print(f"[JEU] Erreur general {general.name}: {e}")
-    
-        for action in all_actions:
-            if action.type == TypeAction.MOVE or action.type == TypeAction.FORM_UP:
-                self._executer_action(action)
-        for action in all_actions:
-            if action.type == TypeAction.ATTACK:
-                self._executer_action(action)
+        
+        move_actions = [a for a in all_actions if a.type in [TypeAction.MOVE, TypeAction.FORM_UP]]
+        attack_actions = [a for a in all_actions if a.type == TypeAction.ATTACK]
+        
+        random.shuffle(move_actions)
+        random.shuffle(attack_actions)
+        
+        for action in move_actions:
+            self._executer_action(action)
+        for action in attack_actions:
+            self._executer_action(action)
+        
         self.unites = [u for u in self.unites if u.alive]
 
-    
+    def check_victory(self) -> Optional[int]:
+        alive_0 = [u for u in self.unites if u.alive and u.equipe == 0]
+        alive_1 = [u for u in self.unites if u.alive and u.equipe == 1]
+        
+        if not alive_0 and alive_1:
+            return 1
+        if not alive_1 and alive_0:
+            return 2
+        if not alive_0 and not alive_1:
+            return 0
+        return None
 
     def trouver_ennemi_proche(self, unite):
         ennemi = self.nearest_enemy(unite)
