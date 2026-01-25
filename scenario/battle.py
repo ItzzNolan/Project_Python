@@ -57,6 +57,16 @@ def load_scenario_config(scenario_name):
             "map_size": 120,
             "description": "Test IA DAFT vs BRAINDEAD"
         },
+        "MajorDAFT_vs_ColonelTurtle": {
+            "units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20},
+            "map_size": 120,
+            "description": "Test IA DAFT vs TURTLE"
+        },
+        "CaptainBraindead_vs_ColonelTurtle": {
+            "units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20},
+            "map_size": 120,
+            "description": "Test IA BRAINDEAD vs TURTLE"
+        },
         "small": {
             "units": {"Knight": 5, "Pikeman": 5},
             "map_size": 30,
@@ -87,7 +97,7 @@ def load_scenario_config(scenario_name):
 
 def cmd_run(args):
     import pygame
-    from scenario.play_tournament import initialiser
+    from scenario.play_tournament_ import initialiser
     from frontend.manager_vue import ManagerVue
     from backend.save_manager import SaveManager
     config = load_scenario_config(args.scenario)
@@ -322,14 +332,17 @@ def cmd_load(args):
 
 def cmd_tourney(args):
 #headless
-    from scenario.play_tournament import tournoi
+    from scenario.play_tournament_ import tournoi
+    from scenario.tournament_calcul import Tournament
     
-    generaux = args.G if args.G else ["braindead", "daft"]
+    generaux = args.G if args.G else ["braindead", "daft", "turtle"]
     if args.S:
         scenarios_configs = {}
+        scenarios={}
         for s in args.S:
             config = load_scenario_config(s)
             scenarios_configs[s] = {"units": config["units"], "map_size": config.get("map_size", 120)}
+            scenarios[s]=config["units"]
     else:
         scenarios_configs = {"standard": {"units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20}, "map_size": 120}}
     
@@ -341,9 +354,14 @@ def cmd_tourney(args):
     print(f"  Combats par matchup: {args.N}")
     print(f"  Alternance positions: {'Non' if args.na else 'Oui'}")
     print("="*60 + "\n")
+    all_scenarios = {name: config["units"] for name, config in scenarios_configs.items()}
+    tournament = Tournament(generaux, all_scenarios)
     for scenario_name, config in scenarios_configs.items():
         print(f"\n>>> Scenario: {scenario_name} (map {config['map_size']}x{config['map_size']})")
-        tournoi(generaux, config["units"], args.N, not_alternate=args.na, map_size=config["map_size"])
+        tournoi(generaux, config["units"], args.N, not_alternate=args.na, 
+                map_size=config["map_size"], scenario_name=scenario_name, tournament=tournament)
+    tournament.generer_rapport_html()
+
 
 def cmd_plot(args):
     print("="*60)
