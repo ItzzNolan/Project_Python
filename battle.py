@@ -76,11 +76,12 @@ def load_scenario_config(scenario_name):
             "description": "Test lois de Lanchester (N vs 2N)"
         }
     }
+
     key = scenario_name.lower().replace("-", "_")
     for name, config in SCENARIO_CONFIGS.items():
         if name.lower() == key:
             return config
-    
+
     return SCENARIO_CONFIGS["standard"]
 
 def cmd_run(args):
@@ -88,8 +89,9 @@ def cmd_run(args):
     from scénario.play_tournament import initialiser
     from frontend.manager_vue import ManagerVue
     from backend.save_manager import SaveManager
+
     config = load_scenario_config(args.scenario)
-    map_size = args.map_size  
+    map_size = args.map_size 
     print(f"\n[SCENARIO] {args.scenario}: {config.get('description', '')}")
     print(f"[UNITES] {config['units']}")
     print(f"[MAP] {map_size}x{map_size}")
@@ -127,9 +129,7 @@ def cmd_run(args):
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            
-
+                running = False            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
@@ -187,6 +187,7 @@ def cmd_run(args):
             manager_vue.vue_pygame.gerer_camera(keys)
         else:
             manager_vue.vue_terminal.gerer_touches(keys, shift)
+
         if not paused and not partie_terminee:
             game_tick += 1
             if game_tick >= 10:
@@ -214,11 +215,13 @@ def cmd_run(args):
                     print(f"\n{'='*40}")
                     print(f"  EGALITE!")
                     print(f"{'='*40}\n")
+        
         manager_vue.afficher(partie_terminee=partie_terminee, gagnant=gagnant)
         pygame.display.flip()
         clock.tick(60)
     
     pygame.quit()
+  
     if args.d and gagnant:
         data = {
             "scenario": args.scenario,
@@ -318,18 +321,19 @@ def cmd_load(args):
     
     pygame.quit()
 
+
 def cmd_tourney(args):
-#headless
     from scénario.play_tournament import tournoi
+    from scénario.tournament_calcul import Tournament
     
     generaux = args.G if args.G else ["braindead", "daft"]
     if args.S:
         scenarios_configs = {}
         for s in args.S:
             config = load_scenario_config(s)
-            scenarios_configs[s] = {"units": config["units"], "map_size": config.get("map_size", 50)}
+            scenarios_configs[s] = {"units": config["units"], "map_size": config.get("map_size", 120)}
     else:
-        scenarios_configs = {"standard": {"units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20}, "map_size": 50}}
+        scenarios_configs = {"standard": {"units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20}, "map_size": 120}}
     
     print("\n" + "="*60)
     print("  TOURNOI MedievAIl BAIttle GenerAIl")
@@ -339,9 +343,13 @@ def cmd_tourney(args):
     print(f"  Combats par matchup: {args.N}")
     print(f"  Alternance positions: {'Non' if args.na else 'Oui'}")
     print("="*60 + "\n")
+    all_scenarios = {name: config["units"] for name, config in scenarios_configs.items()}
+    tournament = Tournament(generaux, all_scenarios)
     for scenario_name, config in scenarios_configs.items():
         print(f"\n>>> Scenario: {scenario_name} (map {config['map_size']}x{config['map_size']})")
-        tournoi(generaux, config["units"], args.N, not_alternate=args.na, map_size=config["map_size"])
+        tournoi(generaux, config["units"], args.N, not_alternate=args.na, 
+                map_size=config["map_size"], scenario_name=scenario_name, tournament=tournament)
+    tournament.generer_rapport_html()
 
 def cmd_plot(args):
     print("="*60)
