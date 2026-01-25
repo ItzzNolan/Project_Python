@@ -49,7 +49,7 @@ class Tournament:
             </style>
         </head>
         <body>
-            <h1>Rapport de Tournoi Automatisé</h1>
+            <h1>Rapport de Tournoi</h1>
             <p style="text-align:center;">Généré le : {now}</p>
 
             <h2>5.a Score Général (Global)</h2>
@@ -131,3 +131,4 @@ class Tournament:
               
        
                         
+
