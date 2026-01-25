@@ -47,8 +47,17 @@ def initialiser(generaux: list, list_unite: dict, swap_positions=False, map_size
     return partie
 
 
-def tournoi(generaux: list, list_unite: dict, nb_combat=100, not_alternate=False, map_size=30):
-    tournament = Tournament(generaux, {"sc1": list_unite})
+def tournoi(generaux: list, list_unite: dict, nb_combat=100, not_alternate=False, map_size=30, scenario_name="sc1", tournament=None):
+    """
+    Lance un tournoi entre les généraux.
+    
+    Si tournament est fourni, les résultats y sont ajoutés (mode multi-scénarios).
+    Sinon, un nouveau Tournament est créé et le rapport est généré à la fin.
+    """
+    # Mode standalone (un seul scénario)
+    standalone = tournament is None
+    if standalone:
+        tournament = Tournament(generaux, {scenario_name: list_unite})
     
     for idx_g1 in range(len(generaux)):
         for idx_g2 in range(idx_g1, len(generaux)):
@@ -96,7 +105,7 @@ def tournoi(generaux: list, list_unite: dict, nb_combat=100, not_alternate=False
                 print(f"  -> Vainqueur: {vainqueur} (tour {partie._tour}, {len(partie.unites)} restants)")
                 
                 tournament.enregistrer_resultat(
-                    "sc1",
+                    scenario_name,
                     g1_name,
                     g2_name,
                     vainqueur
@@ -118,7 +127,11 @@ def tournoi(generaux: list, list_unite: dict, nb_combat=100, not_alternate=False
                     print(f"  -> ATTENTION: Desequilibre detecte!")
             print(f"{'='*50}")
     
-    tournament.generer_rapport_html()
+    # Générer le rapport seulement en mode standalone
+    if standalone:
+        tournament.generer_rapport_html()
+    
+    return tournament
 
 
 if __name__ == "__main__":
