@@ -1,13 +1,15 @@
 import math
 import random
 from typing import List, Optional, Dict
+import matplotlib.pyplot as plt
 from backend.carte import Carte
 from backend.Units import Unit
 from ia.general import General, Action, TypeAction, make_general
 
+
 class Jeu:
     def __init__(self, general_bleu: str = "braindead", general_rouge: str = "braindead"):
-        self.carte = Carte(largeur=30, hauteur=30)
+        self.carte = Carte(largeur=100, hauteur=100)
         self.unites: List[Unit] = []
         self._tour = 0
         self.generaux: Dict[int, General] = {
@@ -17,6 +19,8 @@ class Jeu:
         
         print(f"[JEU] General Bleu: {self.generaux[0].name}")
         print(f"[JEU] General Rouge: {self.generaux[1].name}")
+        self.death0 = [0]
+        self.death1 = [0]
 
     @property
     def tick(self) -> int:
@@ -81,6 +85,10 @@ class Jeu:
             nouvelle_unite.id = len(self.unites)
             self.unites.append(nouvelle_unite)
             self.carte.placer_unite(nouvelle_unite, x, y)
+            if equipe == 0:
+                self.death0[0]+=1
+            else:
+                self.death1[0]+=1
 
     def get_unit_by_id(self, unit_id: int) -> Optional[Unit]:
         for u in self.unites:
@@ -182,6 +190,8 @@ class Jeu:
         
         move_actions = [a for a in all_actions if a.type in [TypeAction.MOVE, TypeAction.FORM_UP]]
         attack_actions = [a for a in all_actions if a.type == TypeAction.ATTACK]
+        self.death0.append(len([u for u in self.unites if u.alive and u.equipe==0]))
+        self.death1.append(len([u for u in self.unites if u.alive and u.equipe==1]))
         
         random.shuffle(move_actions)
         random.shuffle(attack_actions)
@@ -196,7 +206,7 @@ class Jeu:
     def check_victory(self) -> Optional[int]:
         alive_0 = [u for u in self.unites if u.alive and u.equipe == 0]
         alive_1 = [u for u in self.unites if u.alive and u.equipe == 1]
-        if self._tour>1000:
+        if self._tour>2000:
             return 3
         if not alive_0 and alive_1:
             return 1
@@ -215,3 +225,23 @@ class Jeu:
 
     def deplacer_vers(self, unite, cible_x, cible_y):
         self._executer_move(unite, (cible_x, cible_y))
+
+    def graphic(self,tick:int, nom="lanchester"):
+        # PARAMETRES : tick -> nombre final de tour; nom -> nom du fichier 
+        i=0
+        while self.death0[i]==self.death0[0] and self.death1[i]==self.death1[0]:
+            i+=1
+        y=self.death0[i:] #tableau contenant le nombre d'unités vivantes de l'equipe 1
+        z=self.death1[i:] #tableau contenant le nombre d'unités vivantes de l'equipe 1
+        x=[x for x in range(i,tick+1)]
+        # print(self.death0[0],"\n",self.death1[0])
+        # print(y,"\n",z)
+        fig = plt.figure(figsize=(6,6))
+        plt.plot(x,y, label="Armée 0")
+        plt.plot(x,z, label="Armée 1")
+        plt.title(f"Population des armées par tour - Unités {nom}")
+        plt.xlabel("Tours")
+        plt.ylabel("Population")
+        plt.legend()
+        plt.savefig(f"Test/{nom}.pdf")
+        plt.show()
