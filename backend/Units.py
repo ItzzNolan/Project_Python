@@ -1,4 +1,5 @@
 from csv import *
+import random
 import math
 class Unit():
     """
@@ -74,7 +75,8 @@ class Unit():
                     damage += max(0,self.Attack[k]-self.target.Armor[l])
 
         damage=max(1,damage)
-        self.target.take_damage(damage)
+        if random.random()<self.Accuracy:
+            self.target.take_damage(damage)
         self.timer=0
         return damage
 
