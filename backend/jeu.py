@@ -6,8 +6,9 @@ from backend.Units import Unit
 from ia.general import General, Action, TypeAction, make_general
 
 class Jeu:
-    def __init__(self, general_bleu: str = "braindead", general_rouge: str = "braindead"):
-        self.carte = Carte(largeur=30, hauteur=30)
+    def __init__(self, general_bleu: str = "braindead", general_rouge: str = "braindead", 
+                 largeur: int = 120, hauteur: int = 120):
+        self.carte = Carte(largeur=largeur, hauteur=hauteur)
         self.unites: List[Unit] = []
         self._tour = 0
         self.generaux: Dict[int, General] = {
@@ -17,6 +18,7 @@ class Jeu:
         
         print(f"[JEU] General Bleu: {self.generaux[0].name}")
         print(f"[JEU] General Rouge: {self.generaux[1].name}")
+        print(f"[JEU] Carte: {largeur}x{hauteur}")
 
     @property
     def tick(self) -> int:
