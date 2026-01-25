@@ -1,3 +1,5 @@
+import datetime
+
 class Tournament:
     def __init__(self, generals_names, scenarios):
         self.generals = generals_names
@@ -131,4 +133,5 @@ class Tournament:
               
        
                         
+
 
