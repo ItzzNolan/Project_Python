@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 parent_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.append(parent_dir)
 from utils.cli import parse_args
-SCENARIOS_DIR = os.path.join(os.path.dirname(__file__), "scenario")
+SCENARIOS_DIR = os.path.join(os.path.dirname(__file__), "scénario")
 
 def list_scenarios():
     scenarios = []
@@ -146,11 +146,12 @@ def cmd_run(args):
                 elif event.key == pygame.K_F10:
                     manager_vue.vue_pygame.fullscreen = not manager_vue.vue_pygame.fullscreen
                     if manager_vue.vue_pygame.fullscreen:
-                        manager_vue.vue_pygame.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                       manager_vue.vue_pygame.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
                     else:
-                        manager_vue.vue_pygame.screen = pygame.display.set_mode(
-                            (manager_vue.vue_pygame.SCREEN_WIDTH, manager_vue.vue_pygame.SCREEN_HEIGHT))
-                
+                       manager_vue.vue_pygame.screen = pygame.display.set_mode(
+                         (manager_vue.vue_pygame.SCREEN_WIDTH, manager_vue.vue_pygame.SCREEN_HEIGHT))
+                    #pygame.display.toggle_fullscreen()
+                    #manager_vue.vue_pygame.fullscreen = not manager_vue.vue_pygame.fullscreen
                 elif event.key == pygame.K_F11:
                     save_manager.sauvegarder(partie)
                     print("Partie sauvegardee!")
@@ -263,11 +264,6 @@ def cmd_load(args):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    manager_vue.vue_pygame.gerer_clic_minimap(event.pos)
-            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
@@ -295,10 +291,6 @@ def cmd_load(args):
         manager_vue.vue_pygame.gerer_camera(keys)
         
         mouse_buttons = pygame.mouse.get_pressed()
-        if mouse_buttons[0]:
-            mouse_pos = pygame.mouse.get_pos()
-            manager_vue.vue_pygame.gerer_clic_minimap(mouse_pos)
-        
         if not paused and not partie_terminee:
             game_tick += 1
             if game_tick >= 10:
