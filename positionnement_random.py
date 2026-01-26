@@ -1,4 +1,4 @@
- import random
+import random
 
 
 #placer les unité de façon random
