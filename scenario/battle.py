@@ -14,10 +14,8 @@ import importlib
 import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-parent_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..')
-sys.path.append(parent_dir)
 
-from utils.cli import parse_args
+from outils.cli import parse_args
 SCENARIOS_DIR = os.path.join(os.path.dirname(__file__), "scénario")
 
 def list_scenarios():
@@ -34,38 +32,28 @@ def load_scenario_config(scenario_name):
     SCENARIO_CONFIGS = {
         "standard": {
             "units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20},
-            "map_size": 120,
+            "map_size": 50,
             "description": "Bataille standard equilibree"
         },
         "Crossbowman_vs_Knight": {
             "units": {"Crossbowman": 30, "Knight": 30},
-            "map_size": 120,
+            "map_size": 50,
             "description": "Arbaletriers contre Chevaliers"
         },
         "Crossbowman_vs_Pikeman": {
             "units": {"Crossbowman": 30, "Pikeman": 30},
-            "map_size": 120,
+            "map_size": 50,
             "description": "Arbaletriers contre Piquiers"
         },
         "chevalier_piquier": {
             "units": {"Knight": 30, "Pikeman": 30},
-            "map_size": 120,
+            "map_size": 50,
             "description": "Chevaliers contre Piquiers"
         },
         "MajorDAFT_vs_CaptainBraindead": {
             "units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20},
-            "map_size": 120,
+            "map_size": 50,
             "description": "Test IA DAFT vs BRAINDEAD"
-        },
-        "MajorDAFT_vs_ColonelTurtle": {
-            "units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20},
-            "map_size": 120,
-            "description": "Test IA DAFT vs TURTLE"
-        },
-        "CaptainBraindead_vs_ColonelTurtle": {
-            "units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20},
-            "map_size": 120,
-            "description": "Test IA BRAINDEAD vs TURTLE"
         },
         "small": {
             "units": {"Knight": 5, "Pikeman": 5},
@@ -88,20 +76,22 @@ def load_scenario_config(scenario_name):
             "description": "Test lois de Lanchester (N vs 2N)"
         }
     }
+
     key = scenario_name.lower().replace("-", "_")
     for name, config in SCENARIO_CONFIGS.items():
         if name.lower() == key:
             return config
-    
+
     return SCENARIO_CONFIGS["standard"]
 
 def cmd_run(args):
     import pygame
-    from scenario.play_tournament_ import initialiser
+    from scénario.play_tournament import initialiser
     from frontend.manager_vue import ManagerVue
     from backend.save_manager import SaveManager
+
     config = load_scenario_config(args.scenario)
-    map_size = args.map_size  
+    map_size = args.map_size 
     print(f"\n[SCENARIO] {args.scenario}: {config.get('description', '')}")
     print(f"[UNITES] {config['units']}")
     print(f"[MAP] {map_size}x{map_size}")
@@ -139,9 +129,7 @@ def cmd_run(args):
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            
-
+                running = False            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
@@ -199,6 +187,7 @@ def cmd_run(args):
             manager_vue.vue_pygame.gerer_camera(keys)
         else:
             manager_vue.vue_terminal.gerer_touches(keys, shift)
+
         if not paused and not partie_terminee:
             game_tick += 1
             if game_tick >= 10:
@@ -226,11 +215,13 @@ def cmd_run(args):
                     print(f"\n{'='*40}")
                     print(f"  EGALITE!")
                     print(f"{'='*40}\n")
+        
         manager_vue.afficher(partie_terminee=partie_terminee, gagnant=gagnant)
         pygame.display.flip()
         clock.tick(60)
     
     pygame.quit()
+  
     if args.d and gagnant:
         data = {
             "scenario": args.scenario,
@@ -330,19 +321,17 @@ def cmd_load(args):
     
     pygame.quit()
 
+
 def cmd_tourney(args):
-#headless
-    from scenario.play_tournament_ import tournoi
-    from scenario.tournament_calcul import Tournament
+    from scénario.play_tournament import tournoi
+    from scénario.tournament_calcul import Tournament
     
-    generaux = args.G if args.G else ["braindead", "daft", "turtle"]
+    generaux = args.G if args.G else ["braindead", "daft"]
     if args.S:
         scenarios_configs = {}
-        scenarios={}
         for s in args.S:
             config = load_scenario_config(s)
             scenarios_configs[s] = {"units": config["units"], "map_size": config.get("map_size", 120)}
-            scenarios[s]=config["units"]
     else:
         scenarios_configs = {"standard": {"units": {"Knight": 20, "Pikeman": 20, "Crossbowman": 20}, "map_size": 120}}
     
@@ -362,23 +351,30 @@ def cmd_tourney(args):
                 map_size=config["map_size"], scenario_name=scenario_name, tournament=tournament)
     tournament.generer_rapport_html()
 
-
 def cmd_plot(args):
+    import scénario.lanchester as lanchester
+    import re
+
+    print("\n" + "="*60)
+    print("  MODE ANALYSE : COMPARAISON LANCHESTER")
     print("="*60)
-    print("  PLOT MODE")
-    print("="*60)
-    print(f"  AI: {args.ai}")
-    print(f"  Plotter: {args.plotter}")
-    print(f"  Scenario: {args.scenario_call}")
-    print(f"  Range: {args.range_arg}")
-    print(f"  N: {args.N}")
-    print("="*60)
-    print("\n[!] Plot non completement implemente.")
-    print("    Pour implementer, il faut:")
-    print("    1. Parser scenario_call avec eval()")
-    print("    2. Parser range_arg avec eval()")
-    print("    3. Executer N combats pour chaque valeur")
-    print("    4. Generer graphique avec matplotlib")
+    match_list = re.search(r"\[(.*?)\]", args.scenario_call)
+    
+    if match_list:
+        raw_list = match_list.group(1)
+        unit_types = [u.strip().strip("'").strip('"') for u in raw_list.split(',')]
+    else:
+        match_single = re.search(r"'(.*?)'", args.scenario_call)
+        unit_types = [match_single.group(1)] if match_single else ["Knight"]
+    try:
+        r_val = eval(args.range_arg)
+    except:
+        r_val = range(10, 60, 10)
+
+    print(f"  Unités testées    : {unit_types}")
+    print(f"  Valeurs de N      : {list(r_val)}")
+    print("-" * 60)
+    lanchester.plot_lanchester(args.ai, unit_types, r_val, args.N)
 
 def main():
     args = parse_args()
