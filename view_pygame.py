@@ -119,6 +119,9 @@ class PygameView:
         )
 
         self.minimap_rect = (x0, y0, mini_w, mini_h)
+
+
+        #self.minimap_rect = (,,px,py)
     
     # boucle PYGAME
     

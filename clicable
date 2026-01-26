@@ -1,4 +1,5 @@
- if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
     if self.minimap_rect:
         mx, my = pygame.mouse.get_pos()
         x0, y0, w, h = self.minimap_rect
@@ -6,12 +7,6 @@
             self.camera.x = int((mx - x0) * self.TILE_SIZE - self.SCREEN_W / 2)
             self.camera.y = int((my - y0) * self.TILE_SIZE - self.SCREEN_H / 2)
 
+#a ajouter dans dessiner minimap avant blit (dernière ligne)
 
-if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-    mx, my = pygame.mouse.get_pos()
-    mini = draw_minimap()
-    if mini:
-        mx0, my0, mw, mh = mini
-        if mx0 <= mx <= mx0 + mw and my0 <= my <= my0 + mh:
-            camera.x = int((mx - mx0) * TILE_SIZE - SCREEN_W / 2)
-            camera.y = int((my - my0) * TILE_SIZE - SCREEN_H / 2)
+self.minimap_rect = (mm_x,mm_y, self.MINIMAP_SIZE, self.MINIMAP_SIZE)
