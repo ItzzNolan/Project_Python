@@ -15,7 +15,7 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from outils.cli import parse_args
+from utils.cli import parse_args
 SCENARIOS_DIR = os.path.join(os.path.dirname(__file__), "scénario")
 
 def list_scenarios():
