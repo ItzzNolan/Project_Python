@@ -352,21 +352,29 @@ def cmd_tourney(args):
     tournament.generer_rapport_html()
 
 def cmd_plot(args):
+    import scénario.lanchester as lanchester
+    import re
+
+    print("\n" + "="*60)
+    print("  MODE ANALYSE : COMPARAISON LANCHESTER")
     print("="*60)
-    print("  PLOT MODE")
-    print("="*60)
-    print(f"  AI: {args.ai}")
-    print(f"  Plotter: {args.plotter}")
-    print(f"  Scenario: {args.scenario_call}")
-    print(f"  Range: {args.range_arg}")
-    print(f"  N: {args.N}")
-    print("="*60)
-    print("\n[!] Plot non completement implemente.")
-    print("    Pour implementer, il faut:")
-    print("    1. Parser scenario_call avec eval()")
-    print("    2. Parser range_arg avec eval()")
-    print("    3. Executer N combats pour chaque valeur")
-    print("    4. Generer graphique avec matplotlib")
+    match_list = re.search(r"\[(.*?)\]", args.scenario_call)
+    
+    if match_list:
+        raw_list = match_list.group(1)
+        unit_types = [u.strip().strip("'").strip('"') for u in raw_list.split(',')]
+    else:
+        match_single = re.search(r"'(.*?)'", args.scenario_call)
+        unit_types = [match_single.group(1)] if match_single else ["Knight"]
+    try:
+        r_val = eval(args.range_arg)
+    except:
+        r_val = range(10, 60, 10)
+
+    print(f"  Unités testées    : {unit_types}")
+    print(f"  Valeurs de N      : {list(r_val)}")
+    print("-" * 60)
+    lanchester.plot_lanchester(args.ai, unit_types, r_val, args.N)
 
 def main():
     args = parse_args()
