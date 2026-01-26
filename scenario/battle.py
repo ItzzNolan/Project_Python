@@ -12,7 +12,8 @@ import sys
 import os
 import importlib
 import json
-
+parent_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+sys.path.append(parent_dir)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from utils.cli import parse_args
@@ -86,7 +87,7 @@ def load_scenario_config(scenario_name):
 
 def cmd_run(args):
     import pygame
-    from scénario.play_tournament import initialiser
+    from scenario.play_tournament import initialiser
     from frontend.manager_vue import ManagerVue
     from backend.save_manager import SaveManager
 
@@ -323,8 +324,8 @@ def cmd_load(args):
 
 
 def cmd_tourney(args):
-    from scénario.play_tournament import tournoi
-    from scénario.tournament_calcul import Tournament
+    from scenario.play_tournament import tournoi
+    from scenario.tournament_calcul import Tournament
     
     generaux = args.G if args.G else ["braindead", "daft"]
     if args.S:
@@ -352,7 +353,7 @@ def cmd_tourney(args):
     tournament.generer_rapport_html()
 
 def cmd_plot(args):
-    import scénario.lanchester as lanchester
+    import scenario.lanchester as lanchester
     import re
 
     print("\n" + "="*60)
