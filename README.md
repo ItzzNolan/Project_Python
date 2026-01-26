@@ -28,6 +28,8 @@ Pour mettre en place l'environnement de développement et lancer le simulateur:
 **1. Cloner le Dépôt**
 
 ```bash
-git clone https://github.com/ItzzNolan/Project_Python/tree/projet_python_in_dev
-cd PROJECT_PYTHON
+Pour toute modification du code, on utilise...
+git clone https://github.com/ItzzNolan/Project_Python
+...Ou pour toute version alternative juste du main :
+git clone --branch projet_python_main --single-branch --depth 1 https://github.com/ItzzNolan/Project_Python.git
 ```
